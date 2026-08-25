@@ -1,0 +1,10 @@
+GRANT EXECUTE ON FUNCTION public.shares_team_with_owner(uuid, uuid) TO authenticated, service_role;
+GRANT EXECUTE ON FUNCTION public.is_team_member(uuid, uuid) TO authenticated, service_role;
+GRANT EXECUTE ON FUNCTION public.is_team_moderator(uuid, uuid) TO authenticated, service_role;
+GRANT EXECUTE ON FUNCTION public.has_role(uuid, public.app_role) TO authenticated, service_role;
+GRANT SELECT, INSERT, UPDATE, DELETE ON public.teams TO authenticated;
+GRANT ALL ON public.teams TO service_role;
+GRANT SELECT, INSERT, UPDATE, DELETE ON public.team_members TO authenticated;
+GRANT ALL ON public.team_members TO service_role;
+GRANT SELECT, INSERT, UPDATE, DELETE ON public.team_invitations TO authenticated;
+GRANT ALL ON public.team_invitations TO service_role;
