@@ -23,7 +23,7 @@ function verify(payload: string, header: string | null, secret: string) {
   return a.length === b.length && timingSafeEqual(a, b);
 }
 
-export const Route = createFileRoute("/api : public : webhooks/stripe")({
+export const Route = createFileRoute("/api/public/webhooks/stripe")({
   server: {
     handlers: {
       POST: async ({ request }) => {

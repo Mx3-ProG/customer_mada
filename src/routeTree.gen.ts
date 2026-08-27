@@ -23,7 +23,7 @@ import { Route as AuthenticatedCheckoutRouteImport } from './routes/_authenticat
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedPricingRouteImport } from './routes/_authenticated/pricing'
 import { Route as AuthenticatedTeamRouteImport } from './routes/_authenticated/team'
-import { Route as ApiChar58publicChar58webhooksStripeRouteImport } from './routes/api : public : webhooks/stripe'
+import { Route as ApiPublicWebhooksStripeRouteImport } from './routes/api/public/webhooks/stripe'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -94,12 +94,11 @@ const AuthenticatedTeamRoute = AuthenticatedTeamRouteImport.update({
   path: '/team',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
-const ApiChar58publicChar58webhooksStripeRoute =
-  ApiChar58publicChar58webhooksStripeRouteImport.update({
-    id: '/api : public : webhooks/stripe',
-    path: '/api : public : webhooks/stripe',
-    getParentRoute: () => rootRouteImport,
-  } as any)
+const ApiPublicWebhooksStripeRoute = ApiPublicWebhooksStripeRouteImport.update({
+  id: '/api/public/webhooks/stripe',
+  path: '/api/public/webhooks/stripe',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -115,7 +114,7 @@ export interface FileRoutesByFullPath {
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/pricing': typeof AuthenticatedPricingRoute
   '/team': typeof AuthenticatedTeamRoute
-  '/api : public : webhooks/stripe': typeof ApiChar58publicChar58webhooksStripeRoute
+  '/api/public/webhooks/stripe': typeof ApiPublicWebhooksStripeRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -131,7 +130,7 @@ export interface FileRoutesByTo {
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/pricing': typeof AuthenticatedPricingRoute
   '/team': typeof AuthenticatedTeamRoute
-  '/api : public : webhooks/stripe': typeof ApiChar58publicChar58webhooksStripeRoute
+  '/api/public/webhooks/stripe': typeof ApiPublicWebhooksStripeRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -149,7 +148,7 @@ export interface FileRoutesById {
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/pricing': typeof AuthenticatedPricingRoute
   '/_authenticated/team': typeof AuthenticatedTeamRoute
-  '/api : public : webhooks/stripe': typeof ApiChar58publicChar58webhooksStripeRoute
+  '/api/public/webhooks/stripe': typeof ApiPublicWebhooksStripeRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -167,7 +166,7 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/pricing'
     | '/team'
-    | '/api : public : webhooks/stripe'
+    | '/api/public/webhooks/stripe'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -183,7 +182,7 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/pricing'
     | '/team'
-    | '/api : public : webhooks/stripe'
+    | '/api/public/webhooks/stripe'
   id:
     | '__root__'
     | '/'
@@ -200,7 +199,7 @@ export interface FileRouteTypes {
     | '/_authenticated/dashboard'
     | '/_authenticated/pricing'
     | '/_authenticated/team'
-    | '/api : public : webhooks/stripe'
+    | '/api/public/webhooks/stripe'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -213,7 +212,7 @@ export interface RootRouteChildren {
   CookiesRoute: typeof CookiesRoute
   MentionsLegalesRoute: typeof MentionsLegalesRoute
   SitemapDotxmlRoute: typeof SitemapDotxmlRoute
-  ApiChar58publicChar58webhooksStripeRoute: typeof ApiChar58publicChar58webhooksStripeRoute
+  ApiPublicWebhooksStripeRoute: typeof ApiPublicWebhooksStripeRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -316,11 +315,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedTeamRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
-    '/api : public : webhooks/stripe': {
-      id: '/api : public : webhooks/stripe'
-      path: '/api : public : webhooks/stripe'
-      fullPath: '/api : public : webhooks/stripe'
-      preLoaderRoute: typeof ApiChar58publicChar58webhooksStripeRouteImport
+    '/api/public/webhooks/stripe': {
+      id: '/api/public/webhooks/stripe'
+      path: '/api/public/webhooks/stripe'
+      fullPath: '/api/public/webhooks/stripe'
+      preLoaderRoute: typeof ApiPublicWebhooksStripeRouteImport
       parentRoute: typeof rootRouteImport
     }
   }
@@ -355,8 +354,7 @@ const rootRouteChildren: RootRouteChildren = {
   CookiesRoute: CookiesRoute,
   MentionsLegalesRoute: MentionsLegalesRoute,
   SitemapDotxmlRoute: SitemapDotxmlRoute,
-  ApiChar58publicChar58webhooksStripeRoute:
-    ApiChar58publicChar58webhooksStripeRoute,
+  ApiPublicWebhooksStripeRoute: ApiPublicWebhooksStripeRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

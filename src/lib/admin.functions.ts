@@ -38,3 +38,75 @@ export const listAllClients = createServerFn({ method: "GET" })
       owner_email: emails.get(r.user_id) || `${r.user_id.slice(0, 8)}…`,
     }));
   });
+
+export type AdminSubscriptionRow = {
+  user_id: string;
+  owner_email: string;
+  plan: "free" | "pro";
+  status: string;
+};
+
+async function requireSuperadmin(context: {
+  supabase: import("@supabase/supabase-js").SupabaseClient;
+  userId: string;
+}) {
+  const { data: isSuperadmin, error } = await context.supabase.rpc("has_role", {
+    _user_id: context.userId,
+    _role: "superadmin",
+  });
+  if (error) throw new Error(error.message);
+  if (!isSuperadmin) throw new Error("Forbidden");
+}
+
+/** All accounts with their current billing plan — superadmin only. */
+export const listAllSubscriptions = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }): Promise<AdminSubscriptionRow[]> => {
+    await requireSuperadmin(context);
+
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: users, error: usersError } = await supabaseAdmin.auth.admin.listUsers({
+      perPage: 1000,
+    });
+    if (usersError) throw new Error(usersError.message);
+
+    const { data: subs, error: subsError } = await supabaseAdmin
+      .from("subscriptions")
+      .select("user_id, plan, status");
+    if (subsError) throw new Error(subsError.message);
+
+    const byUser = new Map(subs?.map((s) => [s.user_id, s]) ?? []);
+
+    return (users?.users ?? []).map((u) => {
+      const sub = byUser.get(u.id);
+      return {
+        user_id: u.id,
+        owner_email: u.email ?? `${u.id.slice(0, 8)}…`,
+        plan: (sub?.plan as "free" | "pro" | undefined) ?? "free",
+        status: sub?.status ?? "inactive",
+      };
+    });
+  });
+
+/** Manually override a user's plan — superadmin only, bypasses Stripe. */
+export const setUserPlan = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: { userId: string; plan: "free" | "pro" }) => ({
+    userId: String(input.userId),
+    plan: input.plan === "pro" ? "pro" : "free",
+  }))
+  .handler(async ({ data, context }): Promise<{ ok: true }> => {
+    await requireSuperadmin(context);
+
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { error } = await supabaseAdmin.from("subscriptions").upsert(
+      {
+        user_id: data.userId,
+        plan: data.plan,
+        status: data.plan === "pro" ? "active" : "inactive",
+      },
+      { onConflict: "user_id" },
+    );
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });

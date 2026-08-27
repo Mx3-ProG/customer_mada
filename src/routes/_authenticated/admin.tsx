@@ -1,7 +1,12 @@
 import { useMemo, useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { ArrowLeft, Download, Eye } from "lucide-react";
-import { useAllClients, useIsSuperadmin } from "@/hooks/useSuperadmin";
+import {
+  useAllClients,
+  useAllSubscriptions,
+  useIsSuperadmin,
+  useSetUserPlan,
+} from "@/hooks/useSuperadmin";
 import { useScoreSettings } from "@/hooks/useScoreSettings";
 import { useI18n } from "@/i18n";
 import { Input } from "@/components/ui/input";
@@ -71,6 +76,10 @@ function AdminDashboard() {
   const { t } = useI18n();
   const { data: isSuperadmin, isLoading: roleLoading } = useIsSuperadmin();
   const { data: rows = [], isLoading, error } = useAllClients(Boolean(isSuperadmin));
+  const { data: subscriptions = [], isLoading: subsLoading } = useAllSubscriptions(
+    Boolean(isSuperadmin),
+  );
+  const setUserPlan = useSetUserPlan();
   const { data: settings = DEFAULT_SETTINGS } = useScoreSettings();
 
   const [search, setSearch] = useState("");
@@ -208,6 +217,57 @@ function AdminDashboard() {
             </div>
           ))}
         </div>
+
+        <section className="mt-8">
+          <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-ink-faint">
+            {t("admin.plansTitle")}
+          </div>
+          <p className="mt-1 text-xs text-ink-faint">{t("admin.plansHint")}</p>
+          {subsLoading ? (
+            <TableSkeleton rows={3} cols={3} />
+          ) : (
+            <div className="mt-3 overflow-x-auto border-y-2 border-ink-muted">
+              <table className="w-full min-w-[480px] border-collapse text-sm">
+                <thead>
+                  <tr className="border-b border-rule text-left font-mono text-[10px] uppercase tracking-[0.16em] text-ink-faint">
+                    <th className="py-3 pr-4 font-normal">{t("admin.owner")}</th>
+                    <th className="py-3 pr-4 font-normal">{t("admin.plan")}</th>
+                    <th className="py-3 font-normal">{t("admin.planStatus")}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {subscriptions.map((s) => (
+                    <tr key={s.user_id} className="border-b border-rule/60">
+                      <td className="py-3 pr-4 font-mono text-[11px] text-ink-muted">
+                        {s.owner_email}
+                      </td>
+                      <td className="py-3 pr-4">
+                        <Select
+                          value={s.plan}
+                          onValueChange={(plan) =>
+                            setUserPlan.mutate({
+                              userId: s.user_id,
+                              plan: plan as "free" | "pro",
+                            })
+                          }
+                        >
+                          <SelectTrigger className="w-32">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="free">{t("admin.planFree")}</SelectItem>
+                            <SelectItem value="pro">{t("admin.planPro")}</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </td>
+                      <td className="py-3 font-mono text-[11px] text-ink-faint">{s.status}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </section>
 
         <section className="mt-8">
           <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-ink-faint">
