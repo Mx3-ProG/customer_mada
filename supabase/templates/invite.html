@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Vous êtes invité·e sur Mada</title>
+  </head>
+  <body style="margin:0; padding:0; background-color:#f6f1e9; font-family:'Segoe UI', Helvetica, Arial, sans-serif;">
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#f6f1e9; padding:48px 16px;">
+      <tr>
+        <td align="center">
+          <table role="presentation" width="480" cellpadding="0" cellspacing="0" style="max-width:480px; width:100%;">
+            <tr>
+              <td style="font-family:Georgia,'Times New Roman',serif; font-size:20px; letter-spacing:0.08em; text-transform:uppercase; color:#362e28; padding-bottom:32px;">
+                Mada
+              </td>
+            </tr>
+            <tr>
+              <td style="font-family:Georgia,'Times New Roman',serif; font-size:26px; line-height:1.3; color:#362e28; padding-bottom:16px;">
+                Vous êtes invité·e sur Mada
+              </td>
+            </tr>
+            <tr>
+              <td style="font-size:15px; line-height:1.6; color:#4a4038; padding-bottom:32px;">
+                Vous avez été invité·e à rejoindre un espace sur Mada Customer Software. Cliquez sur le bouton ci-dessous pour créer votre compte et accepter l'invitation.
+              </td>
+            </tr>
+            <tr>
+              <td style="padding-bottom:32px;">
+                <a href="{{ .ConfirmationURL }}" style="display:inline-block; background-color:#3e6e73; color:#f6f1e9; text-decoration:none; padding:13px 30px; border-radius:999px; font-family:Helvetica,Arial,sans-serif; font-size:13px; letter-spacing:0.05em; text-transform:uppercase;">
+                  Accepter l'invitation
+                </a>
+              </td>
+            </tr>
+            <tr>
+              <td style="font-size:12px; line-height:1.6; color:#6b5f54; padding-bottom:8px;">
+                Si le bouton ne fonctionne pas, copiez ce lien dans votre navigateur :
+              </td>
+            </tr>
+            <tr>
+              <td style="font-size:12px; line-height:1.6; word-break:break-all; padding-bottom:40px;">
+                <a href="{{ .ConfirmationURL }}" style="color:#3e6e73;">{{ .ConfirmationURL }}</a>
+              </td>
+            </tr>
+            <tr>
+              <td style="border-top:1px solid #e3dacb; padding-top:16px; font-size:11px; line-height:1.6; color:#9a8f82;">
+                Mada Customer Software — si vous ne vous attendiez pas à cette invitation, vous pouvez ignorer ce message sans risque.
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>
