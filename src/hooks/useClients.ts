@@ -1,48 +1,36 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
+import { useServerFn } from "@tanstack/react-start";
 import type { Client, ClientDraft } from "@/lib/clients";
+import { deleteClient, listClients, saveClient } from "@/lib/clients.functions";
 
 const KEY = ["clients"] as const;
 
 export function useClients() {
+  const fetchClients = useServerFn(listClients);
   return useQuery({
     queryKey: KEY,
-    queryFn: async (): Promise<Client[]> => {
-      const { data, error } = await supabase
-        .from("clients")
-        .select("*")
-        .order("created_at", { ascending: false });
-      if (error) throw error;
-      return (data ?? []) as unknown as Client[];
-    },
+    queryFn: async (): Promise<Client[]> =>
+      (await fetchClients()) as unknown as Client[],
   });
 }
 
 export function useSaveClient() {
+  const save = useServerFn(saveClient);
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async ({ id, draft }: { id?: string; draft: ClientDraft }) => {
-      if (id) {
-        const { error } = await supabase.from("clients").update(draft).eq("id", id);
-        if (error) throw error;
-        return;
-      }
-      const { data: userData } = await supabase.auth.getUser();
-      const userId = userData.user?.id;
-      if (!userId) throw new Error("Session expirée, reconnectez-vous.");
-      const { error } = await supabase.from("clients").insert({ ...draft, user_id: userId });
-      if (error) throw error;
+      await save({ data: { id, draft } });
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: KEY }),
   });
 }
 
 export function useDeleteClient() {
+  const del = useServerFn(deleteClient);
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await supabase.from("clients").delete().eq("id", id);
-      if (error) throw error;
+      await del({ data: { id } });
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: KEY }),
   });

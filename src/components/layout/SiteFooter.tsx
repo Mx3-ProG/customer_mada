@@ -92,8 +92,14 @@ export function SiteFooter() {
 
   return (
     <footer className="border-t border-rule">
-      <div className="mx-auto max-w-4xl px-8 py-8">
-        <nav aria-label={s.legal} className="flex flex-wrap justify-center gap-x-5 gap-y-2">
+      <div
+        className="mx-auto max-w-4xl px-4 py-8 sm:px-8"
+        style={{ paddingBottom: "max(2rem, env(safe-area-inset-bottom))" }}
+      >
+        <nav
+          aria-label={s.legal}
+          className="flex flex-wrap justify-center gap-x-5 gap-y-2"
+        >
           {links.map(([to, label]) => (
             <Link
               key={to}
