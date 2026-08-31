@@ -52,6 +52,7 @@ const GROUPS: { titleKey: string; rows: Row[] }[] = [
     rows: [
       { key: "loyalty_days" },
       { key: "loyalty_bonus" },
+      { key: "monthly_payment_bonus", hasHint: true },
       { key: "risk_threshold" },
       { key: "alarm_threshold" },
     ],
@@ -93,7 +94,9 @@ export function ScoreSettingsDialog({
       toast.success(t("settings.saved"));
       onOpenChange(false);
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : t("settings.saveFailed"));
+      toast.error(
+        err instanceof Error ? err.message : t("settings.saveFailed"),
+      );
     }
   };
 
@@ -101,10 +104,10 @@ export function ScoreSettingsDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-2xl">
         <DialogHeader>
-          <DialogTitle className="font-serif text-2xl">{t("settings.title")}</DialogTitle>
-          <DialogDescription>
-            {t("settings.desc")}
-          </DialogDescription>
+          <DialogTitle className="font-serif text-2xl">
+            {t("settings.title")}
+          </DialogTitle>
+          <DialogDescription>{t("settings.desc")}</DialogDescription>
         </DialogHeader>
 
         <form onSubmit={onSubmit} className="space-y-6">
@@ -116,7 +119,9 @@ export function ScoreSettingsDialog({
               <div className="grid gap-4 sm:grid-cols-2">
                 {g.rows.map((r) => (
                   <div key={r.key} className="space-y-1.5">
-                    <Label className="text-[12px] text-ink-muted">{t(`settings.${r.key}` as never)}</Label>
+                    <Label className="text-[12px] text-ink-muted">
+                      {t(`settings.${r.key}` as never)}
+                    </Label>
                     <Input
                       type="number"
                       step={r.step ?? "1"}
@@ -136,10 +141,18 @@ export function ScoreSettingsDialog({
           ))}
 
           <DialogFooter className="gap-2">
-            <Button type="button" variant="ghost" onClick={() => setDraft(DEFAULT_SETTINGS)}>
+            <Button
+              type="button"
+              variant="ghost"
+              onClick={() => setDraft(DEFAULT_SETTINGS)}
+            >
               {t("settings.reset")}
             </Button>
-            <Button type="button" variant="ghost" onClick={() => onOpenChange(false)}>
+            <Button
+              type="button"
+              variant="ghost"
+              onClick={() => onOpenChange(false)}
+            >
               {t("common.cancel")}
             </Button>
             <Button type="submit" disabled={save.isPending}>

@@ -13,8 +13,15 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { DateField } from "@/components/ui/date-field";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { useSaveClient } from "@/hooks/useClients";
-import type { Client, ClientDraft } from "@/lib/clients";
+import type { Client, ClientDraft, PaymentFrequency } from "@/lib/clients";
 import { useI18n } from "@/i18n";
 
 const today = () => new Date().toISOString().slice(0, 10);
@@ -27,8 +34,11 @@ const emptyDraft = (): ClientDraft => ({
   last_payment_at: null,
   next_payment_due: null,
   sale_price: 0,
+  sale_price_frequency: "monthly",
   cost_price: 0,
+  cost_price_frequency: "monthly",
   charges: 0,
+  charges_frequency: "monthly",
   notes: null,
   sector: null,
   real_need: null,
@@ -52,8 +62,11 @@ function toDraft(c: Client): ClientDraft {
     last_payment_at: c.last_payment_at,
     next_payment_due: c.next_payment_due,
     sale_price: Number(c.sale_price),
+    sale_price_frequency: c.sale_price_frequency,
     cost_price: Number(c.cost_price),
+    cost_price_frequency: c.cost_price_frequency,
     charges: Number(c.charges),
+    charges_frequency: c.charges_frequency,
     notes: c.notes,
     sector: c.sector,
     real_need: c.real_need,
@@ -86,6 +99,30 @@ function Field({
       {children}
       {hint && <p className="text-[11px] text-ink-faint">{hint}</p>}
     </div>
+  );
+}
+
+function FrequencySelect({
+  value,
+  onChange,
+}: {
+  value: PaymentFrequency;
+  onChange: (v: PaymentFrequency) => void;
+}) {
+  const { t } = useI18n();
+  return (
+    <Select
+      value={value}
+      onValueChange={(v) => onChange(v as PaymentFrequency)}
+    >
+      <SelectTrigger className="w-full">
+        <SelectValue />
+      </SelectTrigger>
+      <SelectContent>
+        <SelectItem value="monthly">{t("form.frequencyMonthly")}</SelectItem>
+        <SelectItem value="one_time">{t("form.frequencyOneTime")}</SelectItem>
+      </SelectContent>
+    </Select>
   );
 }
 
@@ -127,7 +164,9 @@ export function ClientForm({
       value={(draft[key] as string | null) ?? ""}
       maxLength={max}
       placeholder={placeholder}
-      onChange={(e) => set(key, (e.target.value || null) as ClientDraft[typeof key])}
+      onChange={(e) =>
+        set(key, (e.target.value || null) as ClientDraft[typeof key])
+      }
     />
   );
 
@@ -175,9 +214,7 @@ export function ClientForm({
           <DialogTitle className="font-serif text-2xl">
             {client ? t("form.editTitle") : t("form.newTitle")}
           </DialogTitle>
-          <DialogDescription>
-            {t("form.desc")}
-          </DialogDescription>
+          <DialogDescription>{t("form.desc")}</DialogDescription>
         </DialogHeader>
 
         <form onSubmit={onSubmit} className="space-y-6">
@@ -201,15 +238,24 @@ export function ClientForm({
                   placeholder={t("form.productPh")}
                 />
               </Field>
-              <Field label={t("form.sector")}>{text("sector", t("form.sectorPh"))}</Field>
-              <Field label={t("form.siret")}>{text("siret", "123 456 789 00012", 20)}</Field>
-              <Field label={t("form.businessSince")} hint={t("form.businessSinceHint")}>
+              <Field label={t("form.sector")}>
+                {text("sector", t("form.sectorPh"))}
+              </Field>
+              <Field label={t("form.siret")}>
+                {text("siret", "123 456 789 00012", 20)}
+              </Field>
+              <Field
+                label={t("form.businessSince")}
+                hint={t("form.businessSinceHint")}
+              >
                 <DateField
                   value={draft.business_since}
                   onChange={(v) => set("business_since", v)}
                 />
               </Field>
-              <Field label={t("form.website")}>{text("website", "https://…", 255)}</Field>
+              <Field label={t("form.website")}>
+                {text("website", "https://…", 255)}
+              </Field>
             </div>
             <Field label={t("form.realNeed")}>
               <Textarea
@@ -225,10 +271,18 @@ export function ClientForm({
           <div className="space-y-4">
             <SectionTitle>{t("form.sectionContact")}</SectionTitle>
             <div className="grid gap-4 sm:grid-cols-2">
-              <Field label={t("form.phone")}>{text("phone", "+261 …", 30)}</Field>
-              <Field label={t("form.email")}>{text("email", "contact@exemple.com", 255)}</Field>
-              <Field label={t("form.address")}>{text("address", t("form.addressPh"), 300)}</Field>
-              <Field label={t("form.headquarters")}>{text("headquarters", t("form.hqPh"), 300)}</Field>
+              <Field label={t("form.phone")}>
+                {text("phone", "+261 …", 30)}
+              </Field>
+              <Field label={t("form.email")}>
+                {text("email", "contact@exemple.com", 255)}
+              </Field>
+              <Field label={t("form.address")}>
+                {text("address", t("form.addressPh"), 300)}
+              </Field>
+              <Field label={t("form.headquarters")}>
+                {text("headquarters", t("form.hqPh"), 300)}
+              </Field>
               <Field label={t("form.googleBusiness")} hint="https://…">
                 {text("google_business", t("form.googleBusinessPh"), 255)}
               </Field>
@@ -273,31 +327,49 @@ export function ClientForm({
             <SectionTitle>{t("form.sectionEconomy")}</SectionTitle>
             <div className="grid gap-4 sm:grid-cols-3">
               <Field label={t("form.salePrice")} hint={t("form.salePriceHint")}>
-                <Input
-                  type="number"
-                  min={0}
-                  step="0.01"
-                  value={draft.sale_price}
-                  onChange={(e) => set("sale_price", Number(e.target.value))}
-                />
+                <div className="flex gap-2">
+                  <Input
+                    type="number"
+                    min={0}
+                    step="0.01"
+                    value={draft.sale_price}
+                    onChange={(e) => set("sale_price", Number(e.target.value))}
+                  />
+                  <FrequencySelect
+                    value={draft.sale_price_frequency}
+                    onChange={(v) => set("sale_price_frequency", v)}
+                  />
+                </div>
               </Field>
               <Field label={t("form.costPrice")}>
-                <Input
-                  type="number"
-                  min={0}
-                  step="0.01"
-                  value={draft.cost_price}
-                  onChange={(e) => set("cost_price", Number(e.target.value))}
-                />
+                <div className="flex gap-2">
+                  <Input
+                    type="number"
+                    min={0}
+                    step="0.01"
+                    value={draft.cost_price}
+                    onChange={(e) => set("cost_price", Number(e.target.value))}
+                  />
+                  <FrequencySelect
+                    value={draft.cost_price_frequency}
+                    onChange={(v) => set("cost_price_frequency", v)}
+                  />
+                </div>
               </Field>
               <Field label={t("form.charges")} hint={t("form.chargesHint")}>
-                <Input
-                  type="number"
-                  min={0}
-                  step="0.01"
-                  value={draft.charges}
-                  onChange={(e) => set("charges", Number(e.target.value))}
-                />
+                <div className="flex gap-2">
+                  <Input
+                    type="number"
+                    min={0}
+                    step="0.01"
+                    value={draft.charges}
+                    onChange={(e) => set("charges", Number(e.target.value))}
+                  />
+                  <FrequencySelect
+                    value={draft.charges_frequency}
+                    onChange={(v) => set("charges_frequency", v)}
+                  />
+                </div>
               </Field>
             </div>
           </div>
@@ -313,11 +385,19 @@ export function ClientForm({
           </Field>
 
           <DialogFooter>
-            <Button type="button" variant="ghost" onClick={() => onOpenChange(false)}>
+            <Button
+              type="button"
+              variant="ghost"
+              onClick={() => onOpenChange(false)}
+            >
               {t("common.cancel")}
             </Button>
             <Button type="submit" disabled={save.isPending}>
-              {save.isPending ? t("common.saving") : client ? t("form.submitSave") : t("form.submitAdd")}
+              {save.isPending
+                ? t("common.saving")
+                : client
+                  ? t("form.submitSave")
+                  : t("form.submitAdd")}
             </Button>
           </DialogFooter>
         </form>

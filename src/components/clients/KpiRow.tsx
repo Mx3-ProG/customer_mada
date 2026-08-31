@@ -2,20 +2,35 @@ import { useMemo } from "react";
 import {
   computeMetrics,
   formatMoney,
+  monthlyEquivalent,
   DEFAULT_SETTINGS,
   type Client,
   type ScoreSettings,
 } from "@/lib/clients";
 import { useI18n } from "@/i18n";
 
-function Stat({ label, value, sub, bad }: { label: string; value: string; sub: string; bad?: boolean }) {
+function Stat({
+  label,
+  value,
+  sub,
+  bad,
+}: {
+  label: string;
+  value: string;
+  sub: string;
+  bad?: boolean;
+}) {
   return (
     <div className="px-3 py-4 text-center sm:px-6 sm:py-5">
-      <div className="text-[10px] uppercase tracking-[0.18em] text-ink-faint">{label}</div>
+      <div className="text-[10px] uppercase tracking-[0.18em] text-ink-faint">
+        {label}
+      </div>
       <div className="mt-2 font-mono text-[28px] leading-none sm:text-[40px] tracking-tight text-ink tabular-nums">
         {value}
       </div>
-      <div className={`mt-2 font-mono text-[11px] tabular-nums ${bad ? "text-alarm" : "text-ink-faint"}`}>
+      <div
+        className={`mt-2 font-mono text-[11px] tabular-nums ${bad ? "text-alarm" : "text-ink-faint"}`}
+      >
         {sub}
       </div>
     </div>
@@ -32,7 +47,10 @@ export function KpiRow({
   const { t } = useI18n();
   const stats = useMemo(() => {
     const metrics = clients.map((c) => computeMetrics(c, settings));
-    const revenue = clients.reduce((acc, c) => acc + Number(c.sale_price), 0);
+    // Monthly-equivalent, consistent with margin/score so "% of revenue" stays meaningful.
+    const monthlySale = (c: Client) =>
+      monthlyEquivalent(Number(c.sale_price), c.sale_price_frequency);
+    const revenue = clients.reduce((acc, c) => acc + monthlySale(c), 0);
     const margin = metrics.reduce((acc, m) => acc + m.margin, 0);
     const atRisk = metrics.filter((m) => m.score < settings.risk_threshold);
     const scores = metrics.map((m) => m.score).sort((a, b) => a - b);
@@ -43,7 +61,7 @@ export function KpiRow({
       : 0;
     const revenueAtRisk = clients
       .filter((_, i) => metrics[i]!.score < settings.risk_threshold)
-      .reduce((acc, c) => acc + Number(c.sale_price), 0);
+      .reduce((acc, c) => acc + monthlySale(c), 0);
     return { revenue, margin, atRisk: atRisk.length, median, revenueAtRisk };
   }, [clients, settings]);
 
@@ -59,7 +77,9 @@ export function KpiRow({
         value={formatMoney(stats.margin)}
         sub={
           stats.revenue > 0
-            ? t("kpi.ofRevenue", { pct: Math.round((stats.margin / stats.revenue) * 100) })
+            ? t("kpi.ofRevenue", {
+                pct: Math.round((stats.margin / stats.revenue) * 100),
+              })
             : "—"
         }
         bad={stats.margin < 0}

@@ -18,7 +18,10 @@ export const Route = createFileRoute("/")({
         content:
           "Suivez vos clients Mada Customer Software : dates d'entrée, interactions, paiements, marge par produit et score de santé automatique.",
       },
-      { property: "og:title", content: "Mada Customer Software — Santé client & rentabilité" },
+      {
+        property: "og:title",
+        content: "Mada Customer Software — Santé client & rentabilité",
+      },
       {
         property: "og:description",
         content:
@@ -40,7 +43,9 @@ function Landing() {
   const { t } = useI18n();
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data }) => setSignedIn(Boolean(data.session)));
+    supabase.auth
+      .getSession()
+      .then(({ data }) => setSignedIn(Boolean(data.session)));
     const { data: sub } = supabase.auth.onAuthStateChange((_e, session) =>
       setSignedIn(Boolean(session)),
     );
@@ -54,8 +59,8 @@ function Landing() {
   ];
 
   return (
-    <main className="min-h-screen bg-background">
-      <div className="mx-auto max-w-4xl px-8 py-14">
+    <main className="flex min-h-screen flex-col bg-background">
+      <div className="mx-auto w-full max-w-4xl flex-1 px-8 py-14">
         <header className="flex items-center justify-between">
           <img
             src="/logo-mada.png"

@@ -4,6 +4,20 @@
  * récence de l'interaction, tenue des paiements, rentabilité, fidélité.
  */
 
+/** How a client economics amount recurs — drives its monthly-equivalent value in the score/margin math. */
+export type PaymentFrequency = "monthly" | "one_time";
+
+/** A one-time amount is spread over this many months to get its monthly-equivalent value. */
+export const ONE_TIME_SPREAD_MONTHS = 12;
+
+/** Normalizes an amount to its monthly-equivalent value for margin/score calculations. */
+export function monthlyEquivalent(
+  amount: number,
+  frequency: PaymentFrequency,
+): number {
+  return frequency === "one_time" ? amount / ONE_TIME_SPREAD_MONTHS : amount;
+}
+
 export interface Client {
   id: string;
   user_id: string;
@@ -14,8 +28,11 @@ export interface Client {
   last_payment_at: string | null;
   next_payment_due: string | null;
   sale_price: number;
+  sale_price_frequency: PaymentFrequency;
   cost_price: number;
+  cost_price_frequency: PaymentFrequency;
   charges: number;
+  charges_frequency: PaymentFrequency;
   notes: string | null;
   sector: string | null;
   real_need: string | null;
@@ -40,8 +57,11 @@ export type ClientDraft = {
   last_payment_at: string | null;
   next_payment_due: string | null;
   sale_price: number;
+  sale_price_frequency: PaymentFrequency;
   cost_price: number;
+  cost_price_frequency: PaymentFrequency;
   charges: number;
+  charges_frequency: PaymentFrequency;
   notes: string | null;
   sector: string | null;
   real_need: string | null;
@@ -73,6 +93,7 @@ export interface ScoreSettings {
   no_price_penalty: number;
   loyalty_days: number;
   loyalty_bonus: number;
+  monthly_payment_bonus: number;
   risk_threshold: number;
   alarm_threshold: number;
 }
@@ -94,6 +115,7 @@ export const DEFAULT_SETTINGS: ScoreSettings = {
   no_price_penalty: 10,
   loyalty_days: 365,
   loyalty_bonus: 5,
+  monthly_payment_bonus: 5,
   risk_threshold: 55,
   alarm_threshold: 40,
 };
@@ -115,7 +137,10 @@ export interface ClientMetrics {
 
 const DAY = 24 * 60 * 60 * 1000;
 
-export function daysBetween(iso: string | null, from = new Date()): number | null {
+export function daysBetween(
+  iso: string | null,
+  from = new Date(),
+): number | null {
   if (!iso) return null;
   const d = new Date(`${iso}T00:00:00`);
   if (Number.isNaN(d.getTime())) return null;
@@ -123,7 +148,10 @@ export function daysBetween(iso: string | null, from = new Date()): number | nul
 }
 
 /** Jours restants avant une date (négatif = en retard). */
-export function daysUntil(iso: string | null, from = new Date()): number | null {
+export function daysUntil(
+  iso: string | null,
+  from = new Date(),
+): number | null {
   const past = daysBetween(iso, from);
   return past === null ? null : -past;
 }
@@ -134,8 +162,19 @@ export function computeMetrics(
   now = new Date(),
 ): ClientMetrics {
   const s = settings;
-  const margin = (c.sale_price ?? 0) - (c.cost_price ?? 0) - (c.charges ?? 0);
-  const marginRate = c.sale_price > 0 ? margin / c.sale_price : 0;
+  // Amounts are normalized to a monthly-equivalent before comparison, so a one-time
+  // payment (spread over ONE_TIME_SPREAD_MONTHS) and a monthly one weigh the same in the margin.
+  const saleMonthly = monthlyEquivalent(
+    c.sale_price ?? 0,
+    c.sale_price_frequency,
+  );
+  const costMonthly = monthlyEquivalent(
+    c.cost_price ?? 0,
+    c.cost_price_frequency,
+  );
+  const chargesMonthly = monthlyEquivalent(c.charges ?? 0, c.charges_frequency);
+  const margin = saleMonthly - costMonthly - chargesMonthly;
+  const marginRate = saleMonthly > 0 ? margin / saleMonthly : 0;
 
   const daysSinceInteraction = daysBetween(c.last_interaction_at, now);
   const daysSinceEntry = daysBetween(c.entry_date, now) ?? 0;
@@ -151,7 +190,8 @@ export function computeMetrics(
   } else if (daysSinceInteraction <= s.interaction_grace_days) {
     interaction = 0;
   } else {
-    const per = s.interaction_days_per_point > 0 ? s.interaction_days_per_point : 1;
+    const per =
+      s.interaction_days_per_point > 0 ? s.interaction_days_per_point : 1;
     interaction = -Math.min(
       s.interaction_max_penalty,
       Math.round((daysSinceInteraction - s.interaction_grace_days) / per),
@@ -162,7 +202,10 @@ export function computeMetrics(
   // 2. Tenue des paiements
   let payment = 0;
   if (paymentOverdueDays > 0) {
-    payment = -Math.min(s.overdue_max_penalty, paymentOverdueDays * s.overdue_points_per_day);
+    payment = -Math.min(
+      s.overdue_max_penalty,
+      paymentOverdueDays * s.overdue_points_per_day,
+    );
     payment = -Math.round(-payment);
   } else if (!c.last_payment_at && daysSinceEntry > s.no_payment_after_days) {
     payment = -s.no_payment_penalty;
@@ -171,7 +214,7 @@ export function computeMetrics(
 
   // 3. Rentabilité
   let profitability: number;
-  if (c.sale_price <= 0) profitability = -s.no_price_penalty;
+  if (saleMonthly <= 0) profitability = -s.no_price_penalty;
   else if (marginRate >= s.margin_good_rate) profitability = 0;
   else if (marginRate >= s.margin_ok_rate) profitability = -s.margin_ok_penalty;
   else if (marginRate >= 0) profitability = -s.margin_low_penalty;
@@ -181,6 +224,12 @@ export function computeMetrics(
   // 4. Fidélité
   const loyalty = daysSinceEntry >= s.loyalty_days ? s.loyalty_bonus : 0;
   drivers.push({ label: "Fidélité", points: loyalty });
+
+  // 5. Régularité du paiement — un client qui règle son prix d'achat mensuellement
+  // gagne ce bonus, sans toucher au calcul des retards (driver n°2 ci-dessus).
+  const monthlyPayment =
+    c.sale_price_frequency === "monthly" ? s.monthly_payment_bonus : 0;
+  drivers.push({ label: "Paiement mensuel", points: monthlyPayment });
 
   const raw = 100 + drivers.reduce((acc, d) => acc + d.points, 0);
   const score = Math.max(5, Math.min(99, Math.round(raw)));
@@ -239,7 +288,10 @@ export function formatDate(iso: string | null): string {
 
 export function formatAgo(
   days: number | null,
-  labels: { today: string; dayShort: string } = { today: "aujourd'hui", dayShort: "j" },
+  labels: { today: string; dayShort: string } = {
+    today: "aujourd'hui",
+    dayShort: "j",
+  },
 ): string {
   if (days === null) return "—";
   if (days <= 0) return labels.today;
@@ -247,13 +299,26 @@ export function formatAgo(
 }
 
 /** Couleur continue encodant la santé, résolue en oklch par le navigateur. */
-export function healthColor(score: number, settings: ScoreSettings = DEFAULT_SETTINGS): string {
+export function healthColor(
+  score: number,
+  settings: ScoreSettings = DEFAULT_SETTINGS,
+): string {
   const risk = settings.risk_threshold;
   const alarm = settings.alarm_threshold;
   const h = Math.max(0, Math.min(100, score));
   const mix = (from: string, to: string, t: number) =>
     `color-mix(in oklch, ${to} ${(Math.max(0, Math.min(1, t)) * 100).toFixed(1)}%, ${from})`;
-  if (h >= risk) return mix("var(--health-lo)", "var(--health-hi)", (h - risk) / (100 - risk || 1));
-  if (h >= alarm) return mix("var(--health-lo)", "var(--health-warm)", (risk - h) / (risk - alarm || 1));
+  if (h >= risk)
+    return mix(
+      "var(--health-lo)",
+      "var(--health-hi)",
+      (h - risk) / (100 - risk || 1),
+    );
+  if (h >= alarm)
+    return mix(
+      "var(--health-lo)",
+      "var(--health-warm)",
+      (risk - h) / (risk - alarm || 1),
+    );
   return mix("var(--health-warm)", "var(--alarm)", (alarm - h) / (alarm || 1));
 }

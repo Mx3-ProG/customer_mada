@@ -59,10 +59,11 @@ export function ClientTable({
     [clients, settings],
   );
 
-
   const selectable = Boolean(onToggleRow);
   const allSelected =
-    selectable && clients.length > 0 && clients.every((c) => selectedIds?.includes(c.id));
+    selectable &&
+    clients.length > 0 &&
+    clients.every((c) => selectedIds?.includes(c.id));
 
   return (
     <>
@@ -84,17 +85,30 @@ export function ClientTable({
               <th className="py-3 pr-4 font-normal">{t("table.sector")}</th>
               <th className="py-3 pr-4 font-normal">{t("table.entry")}</th>
 
-              <th className="py-3 pr-4 font-normal">{t("table.lastInteraction")}</th>
-              <th className="py-3 pr-4 font-normal">{t("table.lastPayment")}</th>
-              <th className="py-3 pr-4 text-right font-normal">{t("table.price")}</th>
-              <th className="py-3 pr-4 text-right font-normal">{t("table.margin")}</th>
-              <th className="py-3 pr-4 text-right font-normal">{t("table.score")}</th>
+              <th className="py-3 pr-4 font-normal">
+                {t("table.lastInteraction")}
+              </th>
+              <th className="py-3 pr-4 font-normal">
+                {t("table.lastPayment")}
+              </th>
+              <th className="py-3 pr-4 text-right font-normal">
+                {t("table.price")}
+              </th>
+              <th className="py-3 pr-4 text-right font-normal">
+                {t("table.margin")}
+              </th>
+              <th className="py-3 pr-4 text-right font-normal">
+                {t("table.score")}
+              </th>
               <th className="py-3 font-normal" />
             </tr>
           </thead>
           <tbody>
             {rows.map(({ client, m }) => (
-              <tr key={client.id} className="border-b border-rule/60 align-middle">
+              <tr
+                key={client.id}
+                className="border-b border-rule/60 align-middle"
+              >
                 {selectable && (
                   <td className="py-3 pr-3">
                     <Checkbox
@@ -117,21 +131,35 @@ export function ClientTable({
                     </div>
                   )}
                 </td>
-                <td className="py-3 pr-4 text-ink-muted">{client.product || "—"}</td>
-                <td className="py-3 pr-4 text-ink-muted">{client.sector || "—"}</td>
+                <td className="py-3 pr-4 text-ink-muted">
+                  {client.product || "—"}
+                </td>
+                <td className="py-3 pr-4 text-ink-muted">
+                  {client.sector || "—"}
+                </td>
 
                 <td className="py-3 pr-4 font-mono text-[12px] tabular-nums text-ink-muted">
                   {formatDate(client.entry_date)}
                 </td>
                 <td className="py-3 pr-4 font-mono text-[12px] tabular-nums text-ink-muted">
                   {formatDate(client.last_interaction_at)}
-                  <span className="ml-2 text-ink-faint">{formatAgo(m.daysSinceInteraction, { today: t("time.today"), dayShort: t("time.dayShort") })}</span>
+                  <span className="ml-2 text-ink-faint">
+                    {formatAgo(m.daysSinceInteraction, {
+                      today: t("time.today"),
+                      dayShort: t("time.dayShort"),
+                    })}
+                  </span>
                 </td>
                 <td className="py-3 pr-4 font-mono text-[12px] tabular-nums text-ink-muted">
                   {formatDate(client.last_payment_at)}
                 </td>
                 <td className="py-3 pr-4 text-right font-mono text-[12px] tabular-nums text-ink">
                   {formatMoney(Number(client.sale_price))}
+                  <div className="text-[10px] text-ink-faint">
+                    {client.sale_price_frequency === "monthly"
+                      ? t("form.frequencyMonthly")
+                      : t("form.frequencyOneTime")}
+                  </div>
                 </td>
                 <td
                   className={`py-3 pr-4 text-right font-mono text-[12px] tabular-nums ${m.margin < 0 ? "text-alarm" : "text-ink"}`}
@@ -190,7 +218,11 @@ export function ClientTable({
                   await remove.mutateAsync(pendingDelete.id);
                   toast.success(t("table.deleted"));
                 } catch (err) {
-                  toast.error(err instanceof Error ? err.message : t("table.deleteFailed"));
+                  toast.error(
+                    err instanceof Error
+                      ? err.message
+                      : t("table.deleteFailed"),
+                  );
                 }
                 setPendingDelete(null);
               }}

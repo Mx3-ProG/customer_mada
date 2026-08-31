@@ -34,6 +34,7 @@ import {
   daysBetween,
   formatDate,
   formatMoney,
+  monthlyEquivalent,
   scoreTone,
   DEFAULT_SETTINGS,
 } from "@/lib/clients";
@@ -50,7 +51,8 @@ export const Route = createFileRoute("/_authenticated/admin")({
       { property: "og:title", content: "Superadmin — tous les comptes | Mada" },
       {
         property: "og:description",
-        content: "Consolidation de tous les portefeuilles clients de la plateforme.",
+        content:
+          "Consolidation de tous les portefeuilles clients de la plateforme.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
@@ -75,10 +77,13 @@ function isActiveClient(row: AdminClientRow) {
 function AdminDashboard() {
   const { t } = useI18n();
   const { data: isSuperadmin, isLoading: roleLoading } = useIsSuperadmin();
-  const { data: rows = [], isLoading, error } = useAllClients(Boolean(isSuperadmin));
-  const { data: subscriptions = [], isLoading: subsLoading } = useAllSubscriptions(
-    Boolean(isSuperadmin),
-  );
+  const {
+    data: rows = [],
+    isLoading,
+    error,
+  } = useAllClients(Boolean(isSuperadmin));
+  const { data: subscriptions = [], isLoading: subsLoading } =
+    useAllSubscriptions(Boolean(isSuperadmin));
   const setUserPlan = useSetUserPlan();
   const { data: settings = DEFAULT_SETTINGS } = useScoreSettings();
 
@@ -121,7 +126,12 @@ function AdminDashboard() {
 
   const stats = useMemo(() => {
     const metrics = filtered.map((r) => computeMetrics(r, settings));
-    const revenue = filtered.reduce((s, r) => s + Number(r.sale_price), 0);
+    // Monthly-equivalent, consistent with margin/score.
+    const revenue = filtered.reduce(
+      (s, r) =>
+        s + monthlyEquivalent(Number(r.sale_price), r.sale_price_frequency),
+      0,
+    );
     const margin = metrics.reduce((s, m) => s + m.margin, 0);
     const avg = metrics.length
       ? Math.round(metrics.reduce((s, m) => s + m.score, 0) / metrics.length)
@@ -186,7 +196,11 @@ function AdminDashboard() {
             <ClientSearchButton />
             <LanguageSwitcher />
             <ThemeToggle />
-            <Button variant="ghost" size="sm" onClick={() => setExportOpen(true)}>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setExportOpen(true)}
+            >
               <Download className="size-4" /> {t("admin.export")}
             </Button>
             <Link to="/dashboard">
@@ -200,11 +214,13 @@ function AdminDashboard() {
           </div>
         </header>
 
-
         <div className="mt-8 grid grid-cols-2 gap-px border-y-2 border-ink-muted bg-rule md:grid-cols-5">
           {[
             { label: t("admin.accounts"), value: String(stats.accounts) },
-            { label: t("admin.clients"), value: `${stats.clients} (${stats.active} ✓)` },
+            {
+              label: t("admin.clients"),
+              value: `${stats.clients} (${stats.active} ✓)`,
+            },
             { label: t("admin.revenue"), value: formatMoney(stats.revenue) },
             { label: t("admin.margin"), value: formatMoney(stats.margin) },
             { label: t("admin.avgScore"), value: String(stats.avg) },
@@ -213,7 +229,9 @@ function AdminDashboard() {
               <div className="font-mono text-[10px] uppercase tracking-[0.16em] text-ink-faint">
                 {k.label}
               </div>
-              <div className="mt-2 font-mono text-xl tabular-nums text-ink">{k.value}</div>
+              <div className="mt-2 font-mono text-xl tabular-nums text-ink">
+                {k.value}
+              </div>
             </div>
           ))}
         </div>
@@ -230,9 +248,13 @@ function AdminDashboard() {
               <table className="w-full min-w-[480px] border-collapse text-sm">
                 <thead>
                   <tr className="border-b border-rule text-left font-mono text-[10px] uppercase tracking-[0.16em] text-ink-faint">
-                    <th className="py-3 pr-4 font-normal">{t("admin.owner")}</th>
+                    <th className="py-3 pr-4 font-normal">
+                      {t("admin.owner")}
+                    </th>
                     <th className="py-3 pr-4 font-normal">{t("admin.plan")}</th>
-                    <th className="py-3 font-normal">{t("admin.planStatus")}</th>
+                    <th className="py-3 font-normal">
+                      {t("admin.planStatus")}
+                    </th>
                   </tr>
                 </thead>
                 <tbody>
@@ -255,12 +277,18 @@ function AdminDashboard() {
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="free">{t("admin.planFree")}</SelectItem>
-                            <SelectItem value="pro">{t("admin.planPro")}</SelectItem>
+                            <SelectItem value="free">
+                              {t("admin.planFree")}
+                            </SelectItem>
+                            <SelectItem value="pro">
+                              {t("admin.planPro")}
+                            </SelectItem>
                           </SelectContent>
                         </Select>
                       </td>
-                      <td className="py-3 font-mono text-[11px] text-ink-faint">{s.status}</td>
+                      <td className="py-3 font-mono text-[11px] text-ink-faint">
+                        {s.status}
+                      </td>
                     </tr>
                   ))}
                 </tbody>
@@ -310,8 +338,12 @@ function AdminDashboard() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">{t("admin.allStatuses")}</SelectItem>
-                  <SelectItem value="active">{t("admin.statusActive")}</SelectItem>
-                  <SelectItem value="inactive">{t("admin.statusInactive")}</SelectItem>
+                  <SelectItem value="active">
+                    {t("admin.statusActive")}
+                  </SelectItem>
+                  <SelectItem value="inactive">
+                    {t("admin.statusInactive")}
+                  </SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -330,16 +362,21 @@ function AdminDashboard() {
               <label className="mb-1 block font-mono text-[10px] uppercase tracking-[0.14em] text-ink-faint">
                 {t("admin.createdTo")}
               </label>
-              <DateField value={to || null} onChange={(v) => setTo(v ?? "")} className="w-44" />
+              <DateField
+                value={to || null}
+                onChange={(v) => setTo(v ?? "")}
+                className="w-44"
+              />
             </div>
-
 
             <Button variant="ghost" size="sm" onClick={resetFilters}>
               {t("admin.resetFilters")}
             </Button>
           </div>
           <div className="mt-2 flex items-center justify-between gap-4">
-            <p className="font-mono text-[10px] text-ink-faint">{t("admin.statusHint")}</p>
+            <p className="font-mono text-[10px] text-ink-faint">
+              {t("admin.statusHint")}
+            </p>
             <span className="font-mono text-[11px] uppercase tracking-[0.18em] text-ink-faint tabular-nums">
               {filtered.length} / {rows.length}
             </span>
@@ -348,26 +385,45 @@ function AdminDashboard() {
 
         <div className="mt-4">
           {error ? (
-            <p className="py-16 text-center text-sm text-alarm">{t("admin.error")}</p>
+            <p className="py-16 text-center text-sm text-alarm">
+              {t("admin.error")}
+            </p>
           ) : isLoading || roleLoading ? (
             <TableSkeleton rows={7} cols={8} />
-
           ) : filtered.length === 0 ? (
-            <p className="py-16 text-center text-sm text-ink-faint">{t("admin.empty")}</p>
+            <p className="py-16 text-center text-sm text-ink-faint">
+              {t("admin.empty")}
+            </p>
           ) : (
             <div className="overflow-x-auto border-y-2 border-ink-muted">
               <table className="w-full min-w-[980px] border-collapse text-sm">
                 <thead>
                   <tr className="border-b border-rule text-left font-mono text-[10px] uppercase tracking-[0.16em] text-ink-faint">
-                    <th className="py-3 pr-4 font-normal">{t("admin.owner")}</th>
-                    <th className="py-3 pr-4 font-normal">{t("table.client")}</th>
-                    <th className="py-3 pr-4 font-normal">{t("table.product")}</th>
+                    <th className="py-3 pr-4 font-normal">
+                      {t("admin.owner")}
+                    </th>
+                    <th className="py-3 pr-4 font-normal">
+                      {t("table.client")}
+                    </th>
+                    <th className="py-3 pr-4 font-normal">
+                      {t("table.product")}
+                    </th>
                     <th className="py-3 pr-4 font-normal">{t("col.status")}</th>
-                    <th className="py-3 pr-4 font-normal">{t("col.createdAt")}</th>
-                    <th className="py-3 pr-4 font-normal">{t("table.lastInteraction")}</th>
-                    <th className="py-3 pr-4 text-right font-normal">{t("table.price")}</th>
-                    <th className="py-3 pr-4 text-right font-normal">{t("table.margin")}</th>
-                    <th className="py-3 pr-4 text-right font-normal">{t("table.score")}</th>
+                    <th className="py-3 pr-4 font-normal">
+                      {t("col.createdAt")}
+                    </th>
+                    <th className="py-3 pr-4 font-normal">
+                      {t("table.lastInteraction")}
+                    </th>
+                    <th className="py-3 pr-4 text-right font-normal">
+                      {t("table.price")}
+                    </th>
+                    <th className="py-3 pr-4 text-right font-normal">
+                      {t("table.margin")}
+                    </th>
+                    <th className="py-3 pr-4 text-right font-normal">
+                      {t("table.score")}
+                    </th>
                     <th className="py-3 font-normal" />
                   </tr>
                 </thead>
@@ -381,12 +437,16 @@ function AdminDashboard() {
                           {r.owner_email}
                         </td>
                         <td className="py-3 pr-4 text-ink">{r.name}</td>
-                        <td className="py-3 pr-4 text-ink-muted">{r.product || "—"}</td>
+                        <td className="py-3 pr-4 text-ink-muted">
+                          {r.product || "—"}
+                        </td>
                         <td className="py-3 pr-4">
                           <span
                             className={`font-mono text-[10px] uppercase tracking-[0.14em] ${active ? "text-health-hi" : "text-ink-faint"}`}
                           >
-                            {active ? t("admin.statusActive") : t("admin.statusInactive")}
+                            {active
+                              ? t("admin.statusActive")
+                              : t("admin.statusInactive")}
                           </span>
                         </td>
                         <td className="py-3 pr-4 font-mono text-[12px] tabular-nums text-ink-muted">
@@ -397,6 +457,11 @@ function AdminDashboard() {
                         </td>
                         <td className="py-3 pr-4 text-right font-mono text-[12px] tabular-nums text-ink">
                           {formatMoney(Number(r.sale_price))}
+                          <div className="text-[10px] text-ink-faint">
+                            {r.sale_price_frequency === "monthly"
+                              ? t("form.frequencyMonthly")
+                              : t("form.frequencyOneTime")}
+                          </div>
                         </td>
                         <td
                           className={`py-3 pr-4 text-right font-mono text-[12px] tabular-nums ${m.margin < 0 ? "text-alarm" : "text-ink"}`}
