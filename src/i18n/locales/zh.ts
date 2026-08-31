@@ -157,6 +157,20 @@ export const zh: Dictionary = {
   "form.updated": "客户已更新",
   "form.saveFailed": "保存失败",
 
+  "driver.interaction": "互动近度",
+  "driver.payments": "付款情况",
+  "driver.profitability": "盈利能力",
+  "driver.loyalty": "忠诚度",
+  "driver.monthlyPayment": "按月付款",
+  "score.why": "为什么是这个分数？",
+
+  "table.sortBy": "排序方式",
+  "table.sortScore": "分数",
+  "table.sortMargin": "利润（€）— 从最高到最低",
+  "table.sortToggle": "反转排序顺序",
+
+  "search.tabToComplete": "按 Tab 补全",
+
   "settings.title": "健康分公式",
   "settings.desc": "健康分 = 100 − 扣分 + 奖励。调整每项权重与阈值，表格与分布图会立即重新计算。",
   "settings.group.interaction": "互动时效",

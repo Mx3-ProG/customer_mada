@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { Pencil, Trash2 } from "lucide-react";
+import { ArrowDown, ArrowUp, Pencil, Trash2 } from "lucide-react";
 import {
   computeMetrics,
   formatAgo,
@@ -10,6 +10,12 @@ import {
   type Client,
   type ScoreSettings,
 } from "@/lib/clients";
+import {
+  SORT_KEYS,
+  defaultDirFor,
+  sortValue,
+  type SortKey,
+} from "@/lib/clientSort";
 import { Button } from "@/components/ui/button";
 import {
   AlertDialog,
@@ -21,6 +27,13 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useDeleteClient } from "@/hooks/useClients";
 import { toast } from "sonner";
@@ -49,14 +62,20 @@ export function ClientTable({
 }) {
   const { t } = useI18n();
   const [pendingDelete, setPendingDelete] = useState<Client | null>(null);
+  const [sortKey, setSortKey] = useState<SortKey>("score");
+  const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
   const remove = useDeleteClient();
 
   const rows = useMemo(
     () =>
       clients
         .map((c) => ({ client: c, m: computeMetrics(c, settings) }))
-        .sort((a, b) => a.m.score - b.m.score),
-    [clients, settings],
+        .sort((a, b) =>
+          sortDir === "asc"
+            ? sortValue(a.m, sortKey) - sortValue(b.m, sortKey)
+            : sortValue(b.m, sortKey) - sortValue(a.m, sortKey),
+        ),
+    [clients, settings, sortKey, sortDir],
   );
 
   const selectable = Boolean(onToggleRow);
@@ -65,8 +84,52 @@ export function ClientTable({
     clients.length > 0 &&
     clients.every((c) => selectedIds?.includes(c.id));
 
+  const sortLabel = (key: SortKey) =>
+    key === "score"
+      ? t("table.sortScore")
+      : key === "margin"
+        ? t("table.sortMargin")
+        : t(`driver.${key}` as never);
+
   return (
     <>
+      <div className="mb-3 flex items-center justify-end gap-2">
+        <Select
+          value={sortKey}
+          onValueChange={(v) => {
+            const key = v as SortKey;
+            setSortKey(key);
+            setSortDir(defaultDirFor(key));
+          }}
+        >
+          <SelectTrigger className="w-auto gap-2 text-[12px]">
+            <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-ink-faint">
+              {t("table.sortBy")}
+            </span>
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {SORT_KEYS.map((key) => (
+              <SelectItem key={key} value={key}>
+                {sortLabel(key)}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <Button
+          variant="ghost"
+          size="icon"
+          aria-label={t("table.sortToggle")}
+          onClick={() => setSortDir((d) => (d === "asc" ? "desc" : "asc"))}
+        >
+          {sortDir === "asc" ? (
+            <ArrowUp className="size-4" />
+          ) : (
+            <ArrowDown className="size-4" />
+          )}
+        </Button>
+      </div>
+
       <div className="overflow-x-auto border-y-2 border-ink-muted">
         <table className="w-full min-w-[900px] border-collapse text-sm">
           <thead>
@@ -171,6 +234,12 @@ export function ClientTable({
                 </td>
                 <td
                   className={`py-3 pr-4 text-right font-mono text-[15px] tabular-nums ${toneClass[scoreTone(m.score, settings)]}`}
+                  title={m.drivers
+                    .map(
+                      (d) =>
+                        `${t(`driver.${d.key}` as never)}: ${d.points > 0 ? "+" : ""}${d.points}`,
+                    )
+                    .join("\n")}
                 >
                   {m.score}
                 </td>

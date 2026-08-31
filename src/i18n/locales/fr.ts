@@ -157,6 +157,20 @@ export const fr: Dictionary = {
   "form.updated": "Client mis à jour",
   "form.saveFailed": "Enregistrement impossible",
 
+  "driver.interaction": "Récence de l'interaction",
+  "driver.payments": "Tenue des paiements",
+  "driver.profitability": "Rentabilité",
+  "driver.loyalty": "Fidélité",
+  "driver.monthlyPayment": "Paiement mensuel",
+  "score.why": "Pourquoi ce score ?",
+
+  "table.sortBy": "Trier par",
+  "table.sortScore": "Score",
+  "table.sortMargin": "Marge (€) — du plus au moins rentable",
+  "table.sortToggle": "Inverser l'ordre du tri",
+
+  "search.tabToComplete": "Tab pour compléter",
+
   "settings.title": "Formule du score de santé",
   "settings.desc":
     "Score = 100 − pénalités + bonus. Ajustez chaque pondération et chaque seuil : le tableau et la nuée se recalculent immédiatement.",

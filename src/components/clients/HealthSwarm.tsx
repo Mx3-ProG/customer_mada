@@ -9,10 +9,14 @@ import {
   type Client,
   type ScoreSettings,
 } from "@/lib/clients";
-import { useBeeswarmLayout, type BeeswarmInput } from "@/hooks/useBeeswarmLayout";
+import {
+  useBeeswarmLayout,
+  type BeeswarmInput,
+} from "@/hooks/useBeeswarmLayout";
 import { Axis } from "@/components/chart/Axis";
 import { BeeswarmDot } from "@/components/chart/BeeswarmDot";
 import { Tooltip } from "@/components/chart/Tooltip";
+import { ScoreBreakdown } from "@/components/clients/ScoreBreakdown";
 import { useI18n } from "@/i18n";
 
 const WIDTH = 1080;
@@ -39,7 +43,9 @@ export function HealthSwarm({
   useLayoutEffect(() => {
     const el = wrapRef.current;
     if (!el) return;
-    const ro = new ResizeObserver(([e]) => setWrapW(e?.contentRect.width ?? WIDTH));
+    const ro = new ResizeObserver(([e]) =>
+      setWrapW(e?.contentRect.width ?? WIDTH),
+    );
     ro.observe(el);
     setWrapW(el.clientWidth || WIDTH);
     return () => ro.disconnect();
@@ -47,7 +53,10 @@ export function HealthSwarm({
 
   const innerW = WIDTH - MARGIN.left - MARGIN.right;
   const x = useMemo(
-    () => scaleLinear().domain([0, 100]).range([MARGIN.left, MARGIN.left + innerW]),
+    () =>
+      scaleLinear()
+        .domain([0, 100])
+        .range([MARGIN.left, MARGIN.left + innerW]),
     [innerW],
   );
 
@@ -131,7 +140,10 @@ export function HealthSwarm({
                 dimmed={hoveredId !== null && hoveredId !== n.id}
                 hovered={hoveredId === n.id}
                 selected={false}
-                label={t("chart.dotLabel", { name: entry.c.name, score: entry.m.score })}
+                label={t("chart.dotLabel", {
+                  name: entry.c.name,
+                  score: entry.m.score,
+                })}
                 onEnter={() => setHoveredId(n.id)}
                 onLeave={() => setHoveredId((c) => (c === n.id ? null : c))}
                 onSelect={() => onSelect?.(entry.c)}
@@ -154,7 +166,12 @@ export function HealthSwarm({
                 <span>
                   {t("chart.score")} {hovered.m.score}
                 </span>
-                <span className="font-sans text-ink-faint">{hovered.c.sector || hovered.c.product || "—"}</span>
+                <span className="font-sans text-ink-faint">
+                  {hovered.c.sector || hovered.c.product || "—"}
+                </span>
+              </div>
+              <div className="mt-2 min-w-[160px] border-t border-rule pt-2">
+                <ScoreBreakdown drivers={hovered.m.drivers} dense />
               </div>
             </div>
           </Tooltip>

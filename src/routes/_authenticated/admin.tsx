@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { ArrowLeft, Download, Eye } from "lucide-react";
+import { ArrowDown, ArrowLeft, ArrowUp, Download, Eye } from "lucide-react";
 import {
   useAllClients,
   useAllSubscriptions,
@@ -38,6 +38,12 @@ import {
   scoreTone,
   DEFAULT_SETTINGS,
 } from "@/lib/clients";
+import {
+  SORT_KEYS,
+  defaultDirFor,
+  sortValue,
+  type SortKey,
+} from "@/lib/clientSort";
 
 export const Route = createFileRoute("/_authenticated/admin")({
   head: () => ({
@@ -94,6 +100,8 @@ function AdminDashboard() {
   const [to, setTo] = useState("");
   const [detail, setDetail] = useState<AdminClientRow | null>(null);
   const [exportOpen, setExportOpen] = useState(false);
+  const [sortKey, setSortKey] = useState<SortKey>("score");
+  const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
 
   const accounts = useMemo(() => {
     const map = new Map<string, string>();
@@ -123,6 +131,16 @@ function AdminDashboard() {
       return true;
     });
   }, [rows, search, account, status, from, to]);
+
+  const sortedRows = useMemo(
+    () =>
+      [...filtered].sort((a, b) => {
+        const va = sortValue(computeMetrics(a, settings), sortKey);
+        const vb = sortValue(computeMetrics(b, settings), sortKey);
+        return sortDir === "asc" ? va - vb : vb - va;
+      }),
+    [filtered, settings, sortKey, sortDir],
+  );
 
   const stats = useMemo(() => {
     const metrics = filtered.map((r) => computeMetrics(r, settings));
@@ -395,100 +413,153 @@ function AdminDashboard() {
               {t("admin.empty")}
             </p>
           ) : (
-            <div className="overflow-x-auto border-y-2 border-ink-muted">
-              <table className="w-full min-w-[980px] border-collapse text-sm">
-                <thead>
-                  <tr className="border-b border-rule text-left font-mono text-[10px] uppercase tracking-[0.16em] text-ink-faint">
-                    <th className="py-3 pr-4 font-normal">
-                      {t("admin.owner")}
-                    </th>
-                    <th className="py-3 pr-4 font-normal">
-                      {t("table.client")}
-                    </th>
-                    <th className="py-3 pr-4 font-normal">
-                      {t("table.product")}
-                    </th>
-                    <th className="py-3 pr-4 font-normal">{t("col.status")}</th>
-                    <th className="py-3 pr-4 font-normal">
-                      {t("col.createdAt")}
-                    </th>
-                    <th className="py-3 pr-4 font-normal">
-                      {t("table.lastInteraction")}
-                    </th>
-                    <th className="py-3 pr-4 text-right font-normal">
-                      {t("table.price")}
-                    </th>
-                    <th className="py-3 pr-4 text-right font-normal">
-                      {t("table.margin")}
-                    </th>
-                    <th className="py-3 pr-4 text-right font-normal">
-                      {t("table.score")}
-                    </th>
-                    <th className="py-3 font-normal" />
-                  </tr>
-                </thead>
-                <tbody>
-                  {filtered.map((r) => {
-                    const m = computeMetrics(r, settings);
-                    const active = isActiveClient(r);
-                    return (
-                      <tr key={r.id} className="border-b border-rule/60">
-                        <td className="py-3 pr-4 font-mono text-[11px] text-ink-muted">
-                          {r.owner_email}
-                        </td>
-                        <td className="py-3 pr-4 text-ink">{r.name}</td>
-                        <td className="py-3 pr-4 text-ink-muted">
-                          {r.product || "—"}
-                        </td>
-                        <td className="py-3 pr-4">
-                          <span
-                            className={`font-mono text-[10px] uppercase tracking-[0.14em] ${active ? "text-health-hi" : "text-ink-faint"}`}
+            <>
+              <div className="mb-3 flex items-center justify-end gap-2">
+                <Select
+                  value={sortKey}
+                  onValueChange={(v) => {
+                    const key = v as SortKey;
+                    setSortKey(key);
+                    setSortDir(defaultDirFor(key));
+                  }}
+                >
+                  <SelectTrigger className="w-auto gap-2 text-[12px]">
+                    <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-ink-faint">
+                      {t("table.sortBy")}
+                    </span>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {SORT_KEYS.map((key) => (
+                      <SelectItem key={key} value={key}>
+                        {key === "score"
+                          ? t("table.sortScore")
+                          : key === "margin"
+                            ? t("table.sortMargin")
+                            : t(`driver.${key}` as never)}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  aria-label={t("table.sortToggle")}
+                  onClick={() =>
+                    setSortDir((d) => (d === "asc" ? "desc" : "asc"))
+                  }
+                >
+                  {sortDir === "asc" ? (
+                    <ArrowUp className="size-4" />
+                  ) : (
+                    <ArrowDown className="size-4" />
+                  )}
+                </Button>
+              </div>
+
+              <div className="overflow-x-auto border-y-2 border-ink-muted">
+                <table className="w-full min-w-[980px] border-collapse text-sm">
+                  <thead>
+                    <tr className="border-b border-rule text-left font-mono text-[10px] uppercase tracking-[0.16em] text-ink-faint">
+                      <th className="py-3 pr-4 font-normal">
+                        {t("admin.owner")}
+                      </th>
+                      <th className="py-3 pr-4 font-normal">
+                        {t("table.client")}
+                      </th>
+                      <th className="py-3 pr-4 font-normal">
+                        {t("table.product")}
+                      </th>
+                      <th className="py-3 pr-4 font-normal">
+                        {t("col.status")}
+                      </th>
+                      <th className="py-3 pr-4 font-normal">
+                        {t("col.createdAt")}
+                      </th>
+                      <th className="py-3 pr-4 font-normal">
+                        {t("table.lastInteraction")}
+                      </th>
+                      <th className="py-3 pr-4 text-right font-normal">
+                        {t("table.price")}
+                      </th>
+                      <th className="py-3 pr-4 text-right font-normal">
+                        {t("table.margin")}
+                      </th>
+                      <th className="py-3 pr-4 text-right font-normal">
+                        {t("table.score")}
+                      </th>
+                      <th className="py-3 font-normal" />
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {sortedRows.map((r) => {
+                      const m = computeMetrics(r, settings);
+                      const active = isActiveClient(r);
+                      return (
+                        <tr key={r.id} className="border-b border-rule/60">
+                          <td className="py-3 pr-4 font-mono text-[11px] text-ink-muted">
+                            {r.owner_email}
+                          </td>
+                          <td className="py-3 pr-4 text-ink">{r.name}</td>
+                          <td className="py-3 pr-4 text-ink-muted">
+                            {r.product || "—"}
+                          </td>
+                          <td className="py-3 pr-4">
+                            <span
+                              className={`font-mono text-[10px] uppercase tracking-[0.14em] ${active ? "text-health-hi" : "text-ink-faint"}`}
+                            >
+                              {active
+                                ? t("admin.statusActive")
+                                : t("admin.statusInactive")}
+                            </span>
+                          </td>
+                          <td className="py-3 pr-4 font-mono text-[12px] tabular-nums text-ink-muted">
+                            {formatDate(r.created_at.slice(0, 10))}
+                          </td>
+                          <td className="py-3 pr-4 font-mono text-[12px] tabular-nums text-ink-muted">
+                            {formatDate(r.last_interaction_at)}
+                          </td>
+                          <td className="py-3 pr-4 text-right font-mono text-[12px] tabular-nums text-ink">
+                            {formatMoney(Number(r.sale_price))}
+                            <div className="text-[10px] text-ink-faint">
+                              {r.sale_price_frequency === "monthly"
+                                ? t("form.frequencyMonthly")
+                                : t("form.frequencyOneTime")}
+                            </div>
+                          </td>
+                          <td
+                            className={`py-3 pr-4 text-right font-mono text-[12px] tabular-nums ${m.margin < 0 ? "text-alarm" : "text-ink"}`}
                           >
-                            {active
-                              ? t("admin.statusActive")
-                              : t("admin.statusInactive")}
-                          </span>
-                        </td>
-                        <td className="py-3 pr-4 font-mono text-[12px] tabular-nums text-ink-muted">
-                          {formatDate(r.created_at.slice(0, 10))}
-                        </td>
-                        <td className="py-3 pr-4 font-mono text-[12px] tabular-nums text-ink-muted">
-                          {formatDate(r.last_interaction_at)}
-                        </td>
-                        <td className="py-3 pr-4 text-right font-mono text-[12px] tabular-nums text-ink">
-                          {formatMoney(Number(r.sale_price))}
-                          <div className="text-[10px] text-ink-faint">
-                            {r.sale_price_frequency === "monthly"
-                              ? t("form.frequencyMonthly")
-                              : t("form.frequencyOneTime")}
-                          </div>
-                        </td>
-                        <td
-                          className={`py-3 pr-4 text-right font-mono text-[12px] tabular-nums ${m.margin < 0 ? "text-alarm" : "text-ink"}`}
-                        >
-                          {formatMoney(m.margin)}
-                        </td>
-                        <td
-                          className={`py-3 pr-4 text-right font-mono text-[15px] tabular-nums ${toneClass[scoreTone(m.score, settings)]}`}
-                        >
-                          {m.score}
-                        </td>
-                        <td className="py-3 text-right">
-                          <Button
-                            size="icon"
-                            variant="ghost"
-                            aria-label={t("admin.viewAria", { name: r.name })}
-                            onClick={() => setDetail(r)}
+                            {formatMoney(m.margin)}
+                          </td>
+                          <td
+                            className={`py-3 pr-4 text-right font-mono text-[15px] tabular-nums ${toneClass[scoreTone(m.score, settings)]}`}
+                            title={m.drivers
+                              .map(
+                                (d) =>
+                                  `${t(`driver.${d.key}` as never)}: ${d.points > 0 ? "+" : ""}${d.points}`,
+                              )
+                              .join("\n")}
                           >
-                            <Eye className="size-4" />
-                          </Button>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
+                            {m.score}
+                          </td>
+                          <td className="py-3 text-right">
+                            <Button
+                              size="icon"
+                              variant="ghost"
+                              aria-label={t("admin.viewAria", { name: r.name })}
+                              onClick={() => setDetail(r)}
+                            >
+                              <Eye className="size-4" />
+                            </Button>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </>
           )}
         </div>
       </div>

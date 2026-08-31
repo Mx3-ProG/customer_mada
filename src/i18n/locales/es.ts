@@ -157,6 +157,20 @@ export const es: Dictionary = {
   "form.updated": "Cliente actualizado",
   "form.saveFailed": "No se pudo guardar",
 
+  "driver.interaction": "Recencia de la interacción",
+  "driver.payments": "Comportamiento de pago",
+  "driver.profitability": "Rentabilidad",
+  "driver.loyalty": "Fidelidad",
+  "driver.monthlyPayment": "Pago mensual",
+  "score.why": "¿Por qué esta puntuación?",
+
+  "table.sortBy": "Ordenar por",
+  "table.sortScore": "Puntuación",
+  "table.sortMargin": "Margen (€) — de más a menos rentable",
+  "table.sortToggle": "Invertir el orden",
+
+  "search.tabToComplete": "Tab para completar",
+
   "settings.title": "Fórmula de la puntuación de salud",
   "settings.desc":
     "Puntuación = 100 − penalizaciones + bonos. Ajuste cada ponderación y umbral: la tabla y el enjambre se recalculan al instante.",

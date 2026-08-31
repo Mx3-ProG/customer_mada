@@ -155,6 +155,20 @@ export const en = {
   "form.updated": "Client updated",
   "form.saveFailed": "Could not save",
 
+  "driver.interaction": "Interaction recency",
+  "driver.payments": "Payment behaviour",
+  "driver.profitability": "Profitability",
+  "driver.loyalty": "Loyalty",
+  "driver.monthlyPayment": "Monthly payment",
+  "score.why": "Why this score?",
+
+  "table.sortBy": "Sort by",
+  "table.sortScore": "Score",
+  "table.sortMargin": "Margin (€) — most to least profitable",
+  "table.sortToggle": "Reverse sort order",
+
+  "search.tabToComplete": "Tab to complete",
+
   "settings.title": "Health score formula",
   "settings.desc":
     "Score = 100 − penalties + bonus. Adjust every weight and threshold: the table and the swarm update instantly.",

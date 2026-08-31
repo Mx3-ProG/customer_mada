@@ -157,6 +157,20 @@ export const ru: Dictionary = {
   "form.updated": "Клиент обновлён",
   "form.saveFailed": "Не удалось сохранить",
 
+  "driver.interaction": "Давность взаимодействия",
+  "driver.payments": "Дисциплина платежей",
+  "driver.profitability": "Рентабельность",
+  "driver.loyalty": "Лояльность",
+  "driver.monthlyPayment": "Ежемесячный платёж",
+  "score.why": "Почему такой балл?",
+
+  "table.sortBy": "Сортировать по",
+  "table.sortScore": "Балл",
+  "table.sortMargin": "Маржа (€) — от самых к наименее рентабельным",
+  "table.sortToggle": "Обратить порядок сортировки",
+
+  "search.tabToComplete": "Tab для завершения",
+
   "settings.title": "Формула индекса здоровья",
   "settings.desc":
     "Индекс = 100 − штрафы + бонусы. Настройте каждый вес и порог: таблица и рой пересчитаются мгновенно.",

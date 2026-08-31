@@ -157,6 +157,20 @@ export const ar: Dictionary = {
   "form.updated": "تم تحديث العميل",
   "form.saveFailed": "تعذّر الحفظ",
 
+  "driver.interaction": "حداثة التفاعل",
+  "driver.payments": "انتظام الدفع",
+  "driver.profitability": "الربحية",
+  "driver.loyalty": "الولاء",
+  "driver.monthlyPayment": "الدفع الشهري",
+  "score.why": "لماذا هذه النتيجة؟",
+
+  "table.sortBy": "ترتيب حسب",
+  "table.sortScore": "النتيجة",
+  "table.sortMargin": "الهامش (€) — من الأكثر إلى الأقل ربحية",
+  "table.sortToggle": "عكس ترتيب الفرز",
+
+  "search.tabToComplete": "Tab للإكمال",
+
   "settings.title": "معادلة درجة الصحة",
   "settings.desc":
     "الدرجة = 100 − العقوبات + المكافآت. عدّل كل وزن وكل عتبة: يُعاد حساب الجدول والسرب فورًا.",

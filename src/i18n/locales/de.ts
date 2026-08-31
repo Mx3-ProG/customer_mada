@@ -157,6 +157,20 @@ export const de: Dictionary = {
   "form.updated": "Kunde aktualisiert",
   "form.saveFailed": "Speichern nicht möglich",
 
+  "driver.interaction": "Interaktions-Aktualität",
+  "driver.payments": "Zahlungsverhalten",
+  "driver.profitability": "Rentabilität",
+  "driver.loyalty": "Treue",
+  "driver.monthlyPayment": "Monatliche Zahlung",
+  "score.why": "Warum dieser Score?",
+
+  "table.sortBy": "Sortieren nach",
+  "table.sortScore": "Score",
+  "table.sortMargin": "Marge (€) — von rentabelsten zu unrentabelsten",
+  "table.sortToggle": "Sortierreihenfolge umkehren",
+
+  "search.tabToComplete": "Tab zum Vervollständigen",
+
   "settings.title": "Formel des Gesundheitswerts",
   "settings.desc":
     "Score = 100 − Abzüge + Bonus. Passen Sie jede Gewichtung und Schwelle an: Tabelle und Schwarm werden sofort neu berechnet.",

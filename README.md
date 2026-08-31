@@ -27,9 +27,10 @@ npm run dev
 
 - Créer, modifier, supprimer une fiche client (`src/components/clients/ClientForm.tsx`, `src/hooks/useClients.ts`).
 - Fiche client organisée en 4 sections : **Identité** (nom, produit, secteur, SIRET, ancienneté, site internet, besoin réel), **Contact & présence** (téléphone, e-mail, adresse, siège social, Google My Business, réseaux sociaux), **Relation & paiements** (date d'entrée, dernière interaction, dernier paiement, prochain paiement dû) et **Économie du compte** (prix d'achat, coût de revient, charges).
-- Recherche instantanée (`ClientSearchDialog.tsx`, raccourci accessible depuis l'en-tête) sur nom, produit, secteur, e-mail, téléphone, SIRET.
-- Tableau des clients trié par score croissant (`ClientTable.tsx`), avec indicateur de retard de paiement.
-- Nuée de santé (`HealthSwarm.tsx`) : visualisation en essaim de points positionnés selon le score, avec ligne de seuil de risque et infobulle au survol.
+- Recherche instantanée (`ClientSearchDialog.tsx`, raccourci accessible depuis l'en-tête) sur nom, produit, secteur, e-mail, téléphone, SIRET, avec **autocomplétion** : en tapant un début de mot déjà présent dans le portefeuille (nom, produit, secteur), une suggestion apparaît en grisé — `Tab` la valide.
+- Tableau des clients (`ClientTable.tsx`), trié par score croissant par défaut, avec un sélecteur **« Trier par »** permettant de classer les clients selon chacune des 6 pondérations du score (voir [Calcul du score de santé](#calcul-du-score-de-santé)) ou par marge (du plus au moins rentable) ; un bouton inverse le sens du tri. Indicateur de retard de paiement, et détail du score au survol de la colonne « Score » (info-bulle native).
+- Nuée de santé (`HealthSwarm.tsx`) : visualisation en essaim de points positionnés selon le score, avec ligne de seuil de risque et infobulle au survol détaillant le score poste par poste.
+- Fiche client détaillée (`ClientDetailDialog.tsx`) : section **« Pourquoi ce score ? »** listant chacune des 6 pondérations et leur contribution en points.
 - Export CSV / Excel personnalisable (`ClientExportDialog.tsx`, `AdminExportDialog.tsx`, `src/lib/adminExport.ts`) : choix des colonnes, export de la sélection ou de tout le portefeuille, avec KPI en feuille annexe.
 - Limite de clients sur le plan gratuit (`src/lib/billing.ts`, `FREE_CLIENT_LIMIT = 30`), débloquée par le plan Pro ou pour un superadmin.
 
@@ -140,4 +141,8 @@ Le chiffre d'affaires affiché dans les tableaux de bord (KPI, statistiques supe
 
 ### Répartition détaillée (`drivers`)
 
-`computeMetrics()` retourne aussi le détail poste par poste (`ClientMetrics.drivers`) : label et points de chacune des 5 pondérations ci-dessus — utile pour un futur affichage de type « pourquoi ce score ? », actuellement calculé mais non affiché dans l'interface.
+`computeMetrics()` retourne aussi le détail poste par poste (`ClientMetrics.drivers`) : une clé stable (`interaction` / `payments` / `profitability` / `loyalty` / `monthlyPayment`) et les points de chacune des 5 pondérations ci-dessus. Affiché à trois endroits (`src/components/clients/ScoreBreakdown.tsx`, réutilisé partout) :
+
+- La fiche client (`ClientDetailDialog.tsx`), section « Pourquoi ce score ? ».
+- L'infobulle de la nuée de santé (`HealthSwarm.tsx`) au survol d'un point.
+- Le tableau des clients (`ClientTable.tsx`) : info-bulle native au survol de la colonne « Score », et sélecteur de tri permettant de classer le tableau selon n'importe laquelle des 6 pondérations (les 5 ci-dessus + le bonus paiement mensuel), ou selon la marge en euros (du plus au moins rentable).

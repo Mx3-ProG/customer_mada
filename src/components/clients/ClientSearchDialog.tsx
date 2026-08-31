@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Search } from "lucide-react";
 import {
   CommandDialog,
@@ -12,7 +12,12 @@ import { Button } from "@/components/ui/button";
 import { useClients } from "@/hooks/useClients";
 import { useScoreSettings } from "@/hooks/useScoreSettings";
 import { ClientDetailDialog } from "@/components/clients/ClientDetailDialog";
-import { computeMetrics, scoreTone, DEFAULT_SETTINGS, type Client } from "@/lib/clients";
+import {
+  computeMetrics,
+  scoreTone,
+  DEFAULT_SETTINGS,
+  type Client,
+} from "@/lib/clients";
 import { useI18n } from "@/i18n";
 import { cn } from "@/lib/utils";
 
@@ -34,6 +39,11 @@ export function ClientSearchDialog({
   const { data: clients = [], isLoading } = useClients();
   const { data: settings = DEFAULT_SETTINGS } = useScoreSettings();
   const [selected, setSelected] = useState<Client | null>(null);
+  const [query, setQuery] = useState("");
+
+  useEffect(() => {
+    if (open) setQuery("");
+  }, [open]);
 
   const rows = useMemo(
     () =>
@@ -47,12 +57,54 @@ export function ClientSearchDialog({
     [clients, settings],
   );
 
+  // Distinct name/product/sector values, used as the type-ahead dictionary.
+  const words = useMemo(() => {
+    const set = new Set<string>();
+    for (const c of clients) {
+      for (const v of [c.name, c.product, c.sector]) {
+        const w = v?.trim();
+        if (w) set.add(w);
+      }
+    }
+    return Array.from(set).sort((a, b) => a.localeCompare(b));
+  }, [clients]);
+
+  const suggestion = useMemo(() => {
+    if (!query) return null;
+    const match = words.find(
+      (w) =>
+        w.length > query.length &&
+        w.toLowerCase().startsWith(query.toLowerCase()),
+    );
+    return match ? { typed: query, rest: match.slice(query.length) } : null;
+  }, [query, words]);
+
+  const acceptSuggestion = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (suggestion && e.key === "Tab") {
+      e.preventDefault();
+      setQuery(query + suggestion.rest);
+    }
+  };
+
   return (
     <>
       <CommandDialog open={open} onOpenChange={onOpenChange}>
-        <CommandInput placeholder={t("search.placeholder")} />
+        <CommandInput
+          placeholder={t("search.placeholder")}
+          value={query}
+          onValueChange={setQuery}
+          onKeyDown={acceptSuggestion}
+          suggestion={suggestion}
+        />
+        {suggestion && (
+          <p className="border-b px-3 py-1 font-mono text-[10px] uppercase tracking-[0.14em] text-ink-faint">
+            {t("search.tabToComplete")}
+          </p>
+        )}
         <CommandList>
-          <CommandEmpty>{isLoading ? t("common.loading") : t("search.empty")}</CommandEmpty>
+          <CommandEmpty>
+            {isLoading ? t("common.loading") : t("search.empty")}
+          </CommandEmpty>
           <CommandGroup heading={t("search.clients")}>
             {rows.map(({ client, score, value }) => (
               <CommandItem
@@ -65,7 +117,9 @@ export function ClientSearchDialog({
               >
                 <span className="truncate text-ink">{client.name}</span>
                 {client.product && (
-                  <span className="ml-2 truncate text-xs text-ink-muted">{client.product}</span>
+                  <span className="ml-2 truncate text-xs text-ink-muted">
+                    {client.product}
+                  </span>
                 )}
                 <span
                   className={cn(
@@ -83,7 +137,10 @@ export function ClientSearchDialog({
 
       <ClientDetailDialog
         client={selected}
-        subtitle={[selected?.product, selected?.sector].filter(Boolean).join(" · ") || undefined}
+        subtitle={
+          [selected?.product, selected?.sector].filter(Boolean).join(" · ") ||
+          undefined
+        }
         open={!!selected}
         onOpenChange={(o) => !o && setSelected(null)}
         settings={settings}
@@ -98,7 +155,12 @@ export function ClientSearchButton({ className }: { className?: string }) {
   const [open, setOpen] = useState(false);
   return (
     <>
-      <Button variant="ghost" size="sm" className={className} onClick={() => setOpen(true)}>
+      <Button
+        variant="ghost"
+        size="sm"
+        className={className}
+        onClick={() => setOpen(true)}
+      >
         <Search className="size-4" /> {t("search.clients")}
       </Button>
       <ClientSearchDialog open={open} onOpenChange={setOpen} />

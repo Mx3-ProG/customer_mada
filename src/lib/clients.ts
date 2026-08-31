@@ -120,8 +120,12 @@ export const DEFAULT_SETTINGS: ScoreSettings = {
   alarm_threshold: 40,
 };
 
+/** Stable key for each score rule — translate with `t(`driver.${key}`)`. */
+export type DriverKey =
+  "interaction" | "payments" | "profitability" | "loyalty" | "monthlyPayment";
+
 export interface Driver {
-  label: string;
+  key: DriverKey;
   points: number;
 }
 
@@ -197,7 +201,7 @@ export function computeMetrics(
       Math.round((daysSinceInteraction - s.interaction_grace_days) / per),
     );
   }
-  drivers.push({ label: "Récence de l'interaction", points: interaction });
+  drivers.push({ key: "interaction", points: interaction });
 
   // 2. Tenue des paiements
   let payment = 0;
@@ -210,7 +214,7 @@ export function computeMetrics(
   } else if (!c.last_payment_at && daysSinceEntry > s.no_payment_after_days) {
     payment = -s.no_payment_penalty;
   }
-  drivers.push({ label: "Tenue des paiements", points: payment });
+  drivers.push({ key: "payments", points: payment });
 
   // 3. Rentabilité
   let profitability: number;
@@ -219,17 +223,17 @@ export function computeMetrics(
   else if (marginRate >= s.margin_ok_rate) profitability = -s.margin_ok_penalty;
   else if (marginRate >= 0) profitability = -s.margin_low_penalty;
   else profitability = -s.margin_negative_penalty;
-  drivers.push({ label: "Rentabilité", points: profitability });
+  drivers.push({ key: "profitability", points: profitability });
 
   // 4. Fidélité
   const loyalty = daysSinceEntry >= s.loyalty_days ? s.loyalty_bonus : 0;
-  drivers.push({ label: "Fidélité", points: loyalty });
+  drivers.push({ key: "loyalty", points: loyalty });
 
   // 5. Régularité du paiement — un client qui règle son prix d'achat mensuellement
   // gagne ce bonus, sans toucher au calcul des retards (driver n°2 ci-dessus).
   const monthlyPayment =
     c.sale_price_frequency === "monthly" ? s.monthly_payment_bonus : 0;
-  drivers.push({ label: "Paiement mensuel", points: monthlyPayment });
+  drivers.push({ key: "monthlyPayment", points: monthlyPayment });
 
   const raw = 100 + drivers.reduce((acc, d) => acc + d.points, 0);
   const score = Math.max(5, Math.min(99, Math.round(raw)));
