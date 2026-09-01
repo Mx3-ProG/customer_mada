@@ -48,10 +48,12 @@ export const listAllClients = createServerFn({ method: "GET" })
     }));
   });
 
+export type AdminPlan = "none" | "monthly" | "annual";
+
 export type AdminSubscriptionRow = {
   user_id: string;
   owner_email: string;
-  plan: "free" | "pro";
+  plan: AdminPlan;
   status: string;
 };
 
@@ -93,7 +95,7 @@ export const listAllSubscriptions = createServerFn({ method: "GET" })
       return {
         user_id: u.id,
         owner_email: u.email ?? `${u.id.slice(0, 8)}…`,
-        plan: (sub?.plan as "free" | "pro" | undefined) ?? "free",
+        plan: (sub?.plan as AdminPlan | null | undefined) ?? "none",
         status: sub?.status ?? "inactive",
       };
     });
@@ -102,9 +104,12 @@ export const listAllSubscriptions = createServerFn({ method: "GET" })
 /** Manually override a user's plan — superadmin only, bypasses Stripe. */
 export const setUserPlan = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: { userId: string; plan: "free" | "pro" }) => ({
+  .inputValidator((input: { userId: string; plan: AdminPlan }) => ({
     userId: String(input.userId),
-    plan: input.plan === "pro" ? "pro" : "free",
+    plan:
+      input.plan === "monthly" || input.plan === "annual"
+        ? input.plan
+        : ("none" as AdminPlan),
   }))
   .handler(async ({ data, context }): Promise<{ ok: true }> => {
     await requireSuperadmin(context);
@@ -114,8 +119,8 @@ export const setUserPlan = createServerFn({ method: "POST" })
     const { error } = await supabaseAdmin.from("subscriptions").upsert(
       {
         user_id: data.userId,
-        plan: data.plan,
-        status: data.plan === "pro" ? "active" : "inactive",
+        plan: data.plan === "none" ? null : data.plan,
+        status: data.plan === "none" ? "inactive" : "active",
       },
       { onConflict: "user_id" },
     );

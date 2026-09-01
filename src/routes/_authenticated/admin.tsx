@@ -287,7 +287,7 @@ function AdminDashboard() {
                           onValueChange={(plan) =>
                             setUserPlan.mutate({
                               userId: s.user_id,
-                              plan: plan as "free" | "pro",
+                              plan: plan as "none" | "monthly" | "annual",
                             })
                           }
                         >
@@ -295,11 +295,14 @@ function AdminDashboard() {
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="free">
-                              {t("admin.planFree")}
+                            <SelectItem value="none">
+                              {t("admin.planNone")}
                             </SelectItem>
-                            <SelectItem value="pro">
-                              {t("admin.planPro")}
+                            <SelectItem value="monthly">
+                              {t("plan.monthly")}
+                            </SelectItem>
+                            <SelectItem value="annual">
+                              {t("plan.annual")}
                             </SelectItem>
                           </SelectContent>
                         </Select>

@@ -191,10 +191,11 @@ export type Database = {
           created_at: string;
           current_period_end: string | null;
           id: string;
-          plan: string;
+          plan: string | null;
           status: string;
           stripe_customer_id: string | null;
           stripe_subscription_id: string | null;
+          trial_end: string | null;
           updated_at: string;
           user_id: string;
         };
@@ -203,10 +204,11 @@ export type Database = {
           created_at?: string;
           current_period_end?: string | null;
           id?: string;
-          plan?: string;
+          plan?: string | null;
           status?: string;
           stripe_customer_id?: string | null;
           stripe_subscription_id?: string | null;
+          trial_end?: string | null;
           updated_at?: string;
           user_id?: string;
         };
@@ -215,10 +217,11 @@ export type Database = {
           created_at?: string;
           current_period_end?: string | null;
           id?: string;
-          plan?: string;
+          plan?: string | null;
           status?: string;
           stripe_customer_id?: string | null;
           stripe_subscription_id?: string | null;
+          trial_end?: string | null;
           updated_at?: string;
           user_id?: string;
         };

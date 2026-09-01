@@ -1,30 +1,35 @@
-export const FREE_CLIENT_LIMIT = 30;
-export const PRO_PRICE_EUR = 10;
+export type PlanKind = "monthly" | "annual";
+
+export const MONTHLY_PRICE_EUR = 39.99;
+export const ANNUAL_PRICE_EUR = 399;
+/** Discounted first-month price for new accounts on the monthly plan. */
+export const FIRST_MONTH_PRICE_EUR = 19.99;
+export const TRIAL_DAYS = 14;
 
 export type PlanState = {
-  plan: "free" | "pro";
+  /** Which plan is billed — null if the account never subscribed or its subscription ended. */
+  plan: PlanKind | null;
   status: string;
+  /** True while the account has full paid (or trialing, or admin-granted) access. */
   isPro: boolean;
-  /** Superadmins bypass every limit. */
+  /** Superadmins bypass billing entirely. */
   unlimited: boolean;
+  trialEnd: string | null;
   currentPeriodEnd: string | null;
   cancelAtPeriodEnd: boolean;
 };
 
-export const FREE_PLAN: PlanState = {
-  plan: "free",
+export const NO_PLAN: PlanState = {
+  plan: null,
   status: "inactive",
   isPro: false,
   unlimited: false,
+  trialEnd: null,
   currentPeriodEnd: null,
   cancelAtPeriodEnd: false,
 };
 
-export function canAddClient(plan: PlanState, clientCount: number) {
-  return plan.unlimited || plan.isPro || clientCount < FREE_CLIENT_LIMIT;
-}
-
-export function remainingFreeSlots(plan: PlanState, clientCount: number) {
-  if (plan.unlimited || plan.isPro) return Infinity;
-  return Math.max(0, FREE_CLIENT_LIMIT - clientCount);
+/** Whether the account can use the app at all — subscribed (incl. trialing) or admin-granted. */
+export function hasAccess(plan: PlanState): boolean {
+  return plan.unlimited || plan.isPro;
 }

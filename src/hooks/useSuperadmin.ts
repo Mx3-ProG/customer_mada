@@ -6,6 +6,7 @@ import {
   listAllSubscriptions,
   setUserPlan,
   type AdminClientRow,
+  type AdminPlan,
   type AdminSubscriptionRow,
 } from "@/lib/admin.functions";
 
@@ -52,7 +53,8 @@ export function useSetUserPlan() {
   const setPlan = useServerFn(setUserPlan);
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (input: { userId: string; plan: "free" | "pro" }) => setPlan({ data: input }),
+    mutationFn: (input: { userId: string; plan: AdminPlan }) =>
+      setPlan({ data: input }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["all-subscriptions"] });
     },

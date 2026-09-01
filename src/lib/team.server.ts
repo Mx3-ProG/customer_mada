@@ -1,4 +1,9 @@
-import type { TeamRole, TeamState, TeamMemberRow, TeamInvitationRow } from "@/lib/team";
+import type {
+  TeamRole,
+  TeamState,
+  TeamMemberRow,
+  TeamInvitationRow,
+} from "@/lib/team";
 import { EMPTY_TEAM_STATE } from "@/lib/team";
 
 /** Minimal shape of the authenticated server-fn context. */
@@ -25,15 +30,21 @@ export async function hasTeamAccess(context: TeamCtx): Promise<boolean> {
     .select("plan, status")
     .eq("user_id", context.userId)
     .maybeSingle();
-  return data?.plan === "pro" && ["active", "trialing", "past_due"].includes(data.status);
+  return (
+    (data?.plan === "monthly" || data?.plan === "annual") &&
+    ["active", "trialing", "past_due"].includes(data.status)
+  );
 }
 
 async function emailsFor(ids: string[]): Promise<Map<string, string>> {
   const map = new Map<string, string>();
   if (ids.length === 0) return map;
   try {
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { data } = await supabaseAdmin.auth.admin.listUsers({ perPage: 1000 });
+    const { supabaseAdmin } =
+      await import("@/integrations/supabase/client.server");
+    const { data } = await supabaseAdmin.auth.admin.listUsers({
+      perPage: 1000,
+    });
     data?.users.forEach((u) => map.set(u.id, u.email ?? ""));
   } catch {
     /* fall back to ids */
@@ -69,7 +80,8 @@ export async function loadTeamState(context: TeamCtx): Promise<TeamState> {
   const pendingForMe: TeamState["pendingForMe"] = [];
   if (email) {
     try {
-      const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+      const { supabaseAdmin } =
+        await import("@/integrations/supabase/client.server");
       const { data: invites } = await supabaseAdmin
         .from("team_invitations")
         .select("token, role, status, expires_at, teams(name)")
@@ -99,7 +111,10 @@ export async function loadTeamState(context: TeamCtx): Promise<TeamState> {
     .eq("team_id", team.id)
     .order("created_at", { ascending: true });
 
-  const ids = [team.owner_id, ...(memberRows ?? []).map((m: any) => m.user_id as string)];
+  const ids = [
+    team.owner_id,
+    ...(memberRows ?? []).map((m: any) => m.user_id as string),
+  ];
   const emails = await emailsFor(ids);
 
   const members: TeamMemberRow[] = [
@@ -132,14 +147,23 @@ export async function loadTeamState(context: TeamCtx): Promise<TeamState> {
     invitations = (inv ?? []) as TeamInvitationRow[];
   }
 
-  return { team, myRole, isOwner, canManage, members, invitations, pendingForMe };
+  return {
+    team,
+    myRole,
+    isOwner,
+    canManage,
+    members,
+    invitations,
+    pendingForMe,
+  };
 }
 
 export async function acceptInvitationFor(context: TeamCtx, token: string) {
   const email = ctxEmail(context);
   if (!email) throw new Error("NO_EMAIL");
 
-  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+  const { supabaseAdmin } =
+    await import("@/integrations/supabase/client.server");
   const { data: invite } = await supabaseAdmin
     .from("team_invitations")
     .select("id, team_id, email, role, status, expires_at")
@@ -147,8 +171,10 @@ export async function acceptInvitationFor(context: TeamCtx, token: string) {
     .maybeSingle();
 
   if (!invite || invite.status !== "pending") throw new Error("INVALID_INVITE");
-  if (String(invite.email).toLowerCase() !== email) throw new Error("WRONG_ACCOUNT");
-  if (new Date(invite.expires_at).getTime() < Date.now()) throw new Error("EXPIRED");
+  if (String(invite.email).toLowerCase() !== email)
+    throw new Error("WRONG_ACCOUNT");
+  if (new Date(invite.expires_at).getTime() < Date.now())
+    throw new Error("EXPIRED");
 
   const { error } = await supabaseAdmin
     .from("team_members")
@@ -158,6 +184,9 @@ export async function acceptInvitationFor(context: TeamCtx, token: string) {
     );
   if (error) throw new Error(error.message);
 
-  await supabaseAdmin.from("team_invitations").update({ status: "accepted" }).eq("id", invite.id);
+  await supabaseAdmin
+    .from("team_invitations")
+    .update({ status: "accepted" })
+    .eq("id", invite.id);
   return { ok: true };
 }

@@ -10,11 +10,14 @@ import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { ClientSearchButton } from "@/components/clients/ClientSearchDialog";
 import { MobileNav } from "@/components/layout/MobileNav";
 import { usePlan } from "@/hooks/usePlan";
+import type { PlanKind } from "@/lib/billing";
 
 import { PlanSwarm } from "@/components/pricing/PlanSwarm";
 import { CardsSkeleton } from "@/components/skeletons/PageSkeletons";
-import { createProCheckout, createBillingPortal } from "@/lib/billing.functions";
-
+import {
+  createProCheckout,
+  createBillingPortal,
+} from "@/lib/billing.functions";
 
 export const Route = createFileRoute("/_authenticated/pricing")({
   head: () => ({
@@ -23,12 +26,13 @@ export const Route = createFileRoute("/_authenticated/pricing")({
       {
         name: "description",
         content:
-          "Gratuit jusqu'à 30 clients, puis 10 € par mois pour des clients illimités, l'export CSV/Excel et la formule de score personnalisée.",
+          "399 € par an ou 39,99 € par mois pour des clients illimités, l'export CSV/Excel et la formule de score personnalisée. 14 jours d'essai gratuit sans carte bancaire pour les nouveaux comptes.",
       },
       { property: "og:title", content: "Tarifs — Mada Customer Software" },
       {
         property: "og:description",
-        content: "Freemium : 30 clients offerts, puis 10 €/mois pour tout débloquer.",
+        content:
+          "399 €/an ou 39,99 €/mois. Essai gratuit de 14 jours, sans CB.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
@@ -42,39 +46,60 @@ function Pricing() {
   const { plan, isLoading: planLoading } = usePlan();
   const checkout = useServerFn(createProCheckout);
   const portal = useServerFn(createBillingPortal);
-  const [busy, setBusy] = useState(false);
+  const [busy, setBusy] = useState<PlanKind | "portal" | null>(null);
 
-  const go = async (kind: "checkout" | "portal") => {
-    setBusy(true);
+  const go = async (kind: PlanKind | "portal") => {
+    setBusy(kind);
     try {
-      const fn = kind === "checkout" ? checkout : portal;
-      const res = (await fn({ data: { origin: window.location.origin } })) as unknown as {
+      const fn = kind === "portal" ? portal : checkout;
+      const args =
+        kind === "portal"
+          ? { origin: window.location.origin }
+          : { origin: window.location.origin, interval: kind };
+      const res = (await fn({ data: args as never })) as unknown as {
         url: string;
       };
       window.location.href = res.url;
     } catch (e) {
       const msg = e instanceof Error ? e.message : "";
       toast.error(
-        msg.includes("BILLING_NOT_CONFIGURED") ? t("plan.notConfigured") : t("plan.error"),
+        msg.includes("BILLING_NOT_CONFIGURED")
+          ? t("plan.notConfigured")
+          : t("plan.error"),
       );
     } finally {
-      setBusy(false);
+      setBusy(null);
     }
   };
 
-  const cards = [
+  const features = [
+    t("plan.feat1"),
+    t("plan.feat2"),
+    t("plan.feat3"),
+    t("plan.feat4"),
+  ];
+
+  const cards: {
+    kind: PlanKind;
+    name: string;
+    price: string;
+    per: string;
+    note?: string;
+    highlight?: boolean;
+  }[] = [
     {
-      name: t("plan.free"),
-      price: t("plan.freePrice"),
-      features: [t("plan.freeFeat1"), t("plan.freeFeat2"), t("plan.freeFeat3")],
-      current: !plan.isPro,
+      kind: "monthly",
+      name: t("plan.monthly"),
+      price: t("plan.monthlyPrice"),
+      per: t("plan.perMonth"),
+      note: t("plan.firstMonthNote"),
+      highlight: true,
     },
     {
-      name: t("plan.pro"),
-      price: t("plan.proPrice"),
-      features: [t("plan.proFeat1"), t("plan.proFeat2"), t("plan.proFeat3"), t("plan.proFeat4")],
-      current: plan.isPro,
-      highlight: true,
+      kind: "annual",
+      name: t("plan.annual"),
+      price: t("plan.annualPrice"),
+      per: t("plan.perYear"),
     },
   ];
 
@@ -103,75 +128,90 @@ function Pricing() {
           </div>
         </header>
 
+        <p className="mt-6 border-y-2 border-ink-muted px-4 py-3 text-sm text-ink-muted">
+          {t("plan.trialNote")}
+        </p>
 
         {planLoading ? (
-          <div className="mt-10">
+          <div className="mt-6">
             <CardsSkeleton />
           </div>
         ) : (
-          <div className="mt-10 grid gap-px border-y-2 border-ink-muted bg-rule md:grid-cols-2">
-          {cards.map((c) => (
-
-            <div key={c.name} className="flex flex-col bg-background px-6 py-8">
-              <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-ink-faint">
-                {c.name}
-              </div>
-              <div className="mt-3 flex items-baseline gap-1.5">
-                <span className="font-serif text-4xl text-ink tabular-nums">{c.price}</span>
-                {c.highlight && (
-                  <span className="font-mono text-[11px] text-ink-faint">{t("plan.perMonth")}</span>
-                )}
-              </div>
-              <ul className="mt-6 grow space-y-2.5">
-                {c.features.map((f) => (
-                  <li key={f} className="flex items-start gap-2 text-sm text-ink-muted">
-                    <Check className="mt-0.5 size-4 shrink-0 text-health-hi" />
-                    {f}
-                  </li>
-                ))}
-              </ul>
-              <div className="mt-8">
-                {plan.unlimited && c.highlight ? (
-                  <p className="font-mono text-[11px] uppercase tracking-[0.16em] text-health-hi">
-                    {t("plan.unlimited")}
-                  </p>
-                ) : c.current ? (
-                  <div className="flex items-center gap-3">
-                    <span className="font-mono text-[11px] uppercase tracking-[0.16em] text-ink-faint">
-                      {t("plan.current")}
+          <div className="mt-6 grid gap-px border-y-2 border-ink-muted bg-rule md:grid-cols-2">
+            {cards.map((c) => {
+              const isCurrent = plan.isPro && plan.plan === c.kind;
+              return (
+                <div
+                  key={c.kind}
+                  className="flex flex-col bg-background px-6 py-8"
+                >
+                  <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-ink-faint">
+                    {c.name}
+                  </div>
+                  <div className="mt-3 flex items-baseline gap-1.5">
+                    <span className="font-serif text-4xl text-ink tabular-nums">
+                      {c.price}
                     </span>
-                    {c.highlight && (
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        disabled={busy}
-                        onClick={() => go("portal")}
+                    <span className="font-mono text-[11px] text-ink-faint">
+                      {c.per}
+                    </span>
+                  </div>
+                  {c.note && (
+                    <p className="mt-2 text-xs text-ink-faint">{c.note}</p>
+                  )}
+                  <ul className="mt-6 grow space-y-2.5">
+                    {features.map((f) => (
+                      <li
+                        key={f}
+                        className="flex items-start gap-2 text-sm text-ink-muted"
                       >
-                        {t("plan.manage")}
-                      </Button>
+                        <Check className="mt-0.5 size-4 shrink-0 text-health-hi" />
+                        {f}
+                      </li>
+                    ))}
+                  </ul>
+                  <div className="mt-8">
+                    {plan.unlimited ? (
+                      <p className="font-mono text-[11px] uppercase tracking-[0.16em] text-health-hi">
+                        {t("plan.unlimited")}
+                      </p>
+                    ) : isCurrent ? (
+                      <div className="flex items-center gap-3">
+                        <span className="font-mono text-[11px] uppercase tracking-[0.16em] text-ink-faint">
+                          {t("plan.current")}
+                        </span>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          disabled={busy !== null}
+                          onClick={() => go("portal")}
+                        >
+                          {t("plan.manage")}
+                        </Button>
+                      </div>
+                    ) : (
+                      <div className="flex flex-wrap items-center gap-3">
+                        <Link to="/checkout" search={{ interval: c.kind }}>
+                          <Button variant={c.highlight ? "default" : "outline"}>
+                            {t("plan.checkout")}
+                          </Button>
+                        </Link>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          disabled={busy !== null}
+                          onClick={() => go(c.kind)}
+                        >
+                          {t("plan.subscribe")}
+                        </Button>
+                      </div>
                     )}
                   </div>
-                ) : c.highlight ? (
-                  <div className="flex flex-wrap items-center gap-3">
-                    <Link to="/checkout">
-                      <Button>{t("plan.checkout")}</Button>
-                    </Link>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      disabled={busy}
-                      onClick={() => go("checkout")}
-                    >
-                      {t("plan.upgrade")}
-                    </Button>
-                  </div>
-                ) : null}
-              </div>
-            </div>
-          ))}
+                </div>
+              );
+            })}
           </div>
         )}
-
 
         <PlanSwarm />
       </div>
